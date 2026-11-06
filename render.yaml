@@ -1,0 +1,52 @@
+# Render Blueprint: VernacPay-Global
+# Qualifies for "Best Use of Render ($1,000 Credits)" Hackathon Track
+
+services:
+  # 1. Full-Stack Web Service (Express API + SSE + Static React Client)
+  - type: web
+    name: vernacpay-global-app
+    runtime: node
+    plan: starter
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: PAYPAL_BASE_URL
+        value: https://api-m.sandbox.paypal.com
+      - key: FX_INR_TO_USD_RATE
+        value: "84.00"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: vernacpay-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_WEBHOOK_ID
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ANTHROPIC_MODEL
+        value: claude-3-7-sonnet-20250219
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: SARVAM_STT_MODEL
+        value: saaras:v1
+      - key: SARVAM_TTS_MODEL
+        value: bulbul:v1
+
+databases:
+  # 2. Managed Authoritative PostgreSQL Database
+  - name: vernacpay-db
+    plan: starter
+    region: oregon
+    databaseName: vernacpay_global
+    user: vernacpay_user

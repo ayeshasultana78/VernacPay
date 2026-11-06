@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "skills": {
+    "ag-dev": {
+      "source": "ag-grid/skills",
+      "sourceType": "github",
+      "skillPath": "skills/ag-dev/SKILL.md",
+      "computedHash": "7e4747f4ce515a525bb3b8dbd9e9fe7ee4d50786041c633124e17d9b9093c82f"
+    },
+    "ag-update": {
+      "source": "ag-grid/skills",
+      "sourceType": "github",
+      "skillPath": "skills/ag-update/SKILL.md",
+      "computedHash": "21111a64c8e1ebca92970ea15ed34e469af12e6488adb938170f20128499fa3e"
+    },
+    "paypal-best-practices": {
+      "source": "paypal/AI-Toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/paypal-best-practices/SKILL.md",
+      "computedHash": "e5fcc8ecdf2df019e73461634db28ef97f184538b0bb9082492e72cc1b2ad72a"
+    },
+    "paypal-routing": {
+      "source": "paypal/AI-Toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/paypal-routing/SKILL.md",
+      "computedHash": "2f60b66912f094a3e64fe82617e7ce93380ae5a2a515ac0158d34a3481128725"
+    }
+  }
+}

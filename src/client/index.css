@@ -1,0 +1,127 @@
+@import 'ag-grid-community/styles/ag-grid.css';
+@import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Calm Trust Fintech Palette - Light Mode */
+    --bg-base: oklch(0.985 0.005 255);
+    --bg-surface: oklch(1 0 0);
+    --bg-surface-raised: oklch(0.96 0.008 255);
+    --bg-surface-sunken: oklch(0.93 0.01 255);
+    
+    --border-subtle: oklch(0.88 0.01 255);
+    --border-strong: oklch(0.78 0.015 255);
+    --border-focus: oklch(0.55 0.20 245);
+
+    --text-main: oklch(0.16 0.02 255);
+    --text-muted: oklch(0.48 0.02 255);
+    --text-dim: oklch(0.62 0.015 255);
+
+    /* Brand & Semantic */
+    --accent-primary: oklch(0.55 0.20 245); /* PayPal Blue #0070E0 */
+    --accent-hover: oklch(0.50 0.22 245);
+    --accent-subtle: oklch(0.93 0.04 245);
+
+    --status-verified: oklch(0.62 0.18 150); /* Emerald */
+    --status-verified-bg: oklch(0.93 0.05 150);
+    --status-staged: oklch(0.70 0.16 75); /* Amber */
+    --status-staged-bg: oklch(0.95 0.05 75);
+    --status-unpaid: oklch(0.60 0.22 25); /* Rose */
+    --status-unpaid-bg: oklch(0.94 0.05 25);
+
+    --glass-bg: oklch(1 0 0 / 0.85);
+    --glass-border: oklch(0.88 0.01 255 / 0.6);
+  }
+
+  .dark {
+    /* Calm Trust Fintech Palette - Dark Mode (Ink Navy Base) */
+    --bg-base: oklch(0.15 0.04 255); /* Deep Ink Navy ~#0B1B3A */
+    --bg-surface: oklch(0.19 0.04 255); /* Surface Card */
+    --bg-surface-raised: oklch(0.24 0.04 255); /* Hover / Raised */
+    --bg-surface-sunken: oklch(0.12 0.035 255);
+
+    --border-subtle: oklch(0.28 0.03 255 / 0.75);
+    --border-strong: oklch(0.38 0.035 255);
+    --border-focus: oklch(0.65 0.18 245);
+
+    --text-main: oklch(0.96 0.005 255);
+    --text-muted: oklch(0.70 0.02 255);
+    --text-dim: oklch(0.50 0.02 255);
+
+    /* Brand & Semantic */
+    --accent-primary: oklch(0.62 0.20 245); /* Vibrant PayPal Blue */
+    --accent-hover: oklch(0.68 0.20 245);
+    --accent-subtle: oklch(0.25 0.06 245);
+
+    --status-verified: oklch(0.68 0.18 150); /* Emerald */
+    --status-verified-bg: oklch(0.25 0.06 150);
+    --status-staged: oklch(0.76 0.16 75); /* Amber */
+    --status-staged-bg: oklch(0.26 0.06 75);
+    --status-unpaid: oklch(0.65 0.22 25); /* Rose */
+    --status-unpaid-bg: oklch(0.25 0.07 25);
+
+    --glass-bg: oklch(0.17 0.04 255 / 0.85);
+    --glass-border: oklch(0.32 0.03 255 / 0.6);
+  }
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* AG Grid Calm Trust Quartz Adaptation (Community Edition Only) */
+.ag-theme-quartz,
+.ag-theme-quartz-dark {
+  --ag-background-color: var(--bg-surface);
+  --ag-header-background-color: var(--bg-surface-raised);
+  --ag-odd-row-background-color: var(--bg-surface);
+  --ag-row-hover-color: var(--bg-surface-raised);
+  --ag-selected-row-background-color: var(--accent-subtle);
+  --ag-border-color: var(--border-subtle);
+  --ag-header-foreground-color: var(--text-muted);
+  --ag-foreground-color: var(--text-main);
+  --ag-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --ag-font-size: 13px;
+  --ag-grid-size: 6px;
+  --ag-row-height: 48px;
+  --ag-header-height: 42px;
+  --ag-cell-horizontal-padding: 14px;
+}
+
+/* Tabular Numbers for Monospace Figures */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Indic Script line height support */
+.font-telugu {
+  font-family: 'Noto Sans Telugu', sans-serif;
+  line-height: 1.7;
+}
+
+.font-devanagari {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+  line-height: 1.7;
+}
+
+/* Focus Visible Utility */
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
