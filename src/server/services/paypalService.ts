@@ -61,6 +61,14 @@ export class PayPalService {
            this.clientSecret.startsWith('mock-');
   }
 
+  public getAppBaseUrl(): string {
+    const appBase = process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000');
+    if (process.env.NODE_ENV === 'production' && (!appBase || appBase.includes('localhost'))) {
+      throw new Error('[PayPal Guard] APP_BASE_URL must be configured with a public URL in production. Localhost is strictly disallowed.');
+    }
+    return appBase;
+  }
+
   // --- Domain 0: OAuth2 Authentication ---
   async getAccessToken(): Promise<string> {
     if (this.cachedToken && Date.now() < this.cachedToken.expiresAt) {
@@ -126,7 +134,7 @@ export class PayPalService {
 
     try {
       const token = await this.getAccessToken();
-      const appBase = process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
+      const appBase = this.getAppBaseUrl();
       const res = await fetch(`${this.baseUrl}/v2/checkout/orders`, {
         method: 'POST',
         headers: {
@@ -219,6 +227,7 @@ export class PayPalService {
 
     try {
       const token = await this.getAccessToken();
+      const appBase = this.getAppBaseUrl();
       const res = await fetch(`${this.baseUrl}/v2/checkout/orders/${orderId}/capture`, {
         method: 'POST',
         headers: {
@@ -539,6 +548,7 @@ export class PayPalService {
     }
     try {
       const token = await this.getAccessToken();
+      const appBase = this.getAppBaseUrl();
       const res = await fetch(`${this.baseUrl}/v1/billing/subscriptions`, {
         method: 'POST',
         headers: {
@@ -553,8 +563,8 @@ export class PayPalService {
           },
           application_context: {
             brand_name: 'VernacPay Global Tutors',
-            return_url: 'http://localhost:3000/api/paypal/subscription-return',
-            cancel_url: 'http://localhost:3000/api/paypal/subscription-cancel',
+            return_url: `${appBase}/api/paypal/subscription-return`,
+            cancel_url: `${appBase}/api/paypal/subscription-cancel`,
           },
         }),
       });

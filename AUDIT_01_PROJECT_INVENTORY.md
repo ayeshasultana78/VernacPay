@@ -24,7 +24,7 @@ VernacPay-Global ("Speak Your Language. Sell to the World.") is a production-gra
 ## 2. Directory Structure Inventory
 
 ```text
-c:/Users/Alence/Downloads/paypal/
+VernacPay/
 ├── .agents/
 │   └── skills/
 │       ├── ag-dev/                     # AG Grid development knowledge base

@@ -1,5 +1,18 @@
 {
   "mcpServers": {
+    "render": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://mcp.render.com/mcp",
+        "--header",
+        "Authorization:${AUTH_HEADER}"
+      ],
+      "env": {
+        "AUTH_HEADER": "Bearer ${RENDER_API_KEY}"
+      }
+    },
     "paypal": {
       "command": "npx",
       "args": ["-y", "@paypal/agent-toolkit/mcp", "--tools=all"],

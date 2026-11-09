@@ -62,11 +62,24 @@ export const AppContent: React.FC = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // 1. Initial Data Fetch
+  // 1. Initial Data Fetch & URL Redirect Handlers
   useEffect(() => {
     fetchTransactions();
     fetchAuditEvents();
     fetchPendingStaged();
+
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('payment_success') === 'true') {
+      const orderId = searchParams.get('order_id');
+      toast.success(`PayPal payment verified! Order ${orderId || ''} recorded on ledger.`);
+      setStageState(5, 'done');
+      setCurrentStage('5. WEBHOOK VERIFIED & LEDGER LOCKED');
+      // Clean URL without refresh
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (searchParams.get('order_cancelled') === 'true') {
+      toast.warning('PayPal checkout was cancelled by the buyer.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
   }, []);
 
   // 2. Server-Sent Events (SSE) Live Stream
@@ -217,7 +230,13 @@ export const AppContent: React.FC = () => {
     } else {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
+        const supportedMime = (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))
+          ? 'audio/webm;codecs=opus'
+          : (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/mp4'))
+          ? 'audio/mp4'
+          : 'audio/webm';
+
+        const mediaRecorder = new MediaRecorder(stream, supportedMime ? { mimeType: supportedMime } : undefined);
         mediaRecorderRef.current = mediaRecorder;
         audioChunksRef.current = [];
 
@@ -226,7 +245,8 @@ export const AppContent: React.FC = () => {
         };
 
         mediaRecorder.onstop = async () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const recordMime = mediaRecorder.mimeType || supportedMime;
+          const audioBlob = new Blob(audioChunksRef.current, { type: recordMime });
           stream.getTracks().forEach((track) => track.stop());
 
           setIsLoading(true);
@@ -234,7 +254,8 @@ export const AppContent: React.FC = () => {
           setStageState(1, 'active');
 
           const formData = new FormData();
-          formData.append('audio', audioBlob, 'mic.webm');
+          const ext = recordMime.includes('mp4') ? 'mic.mp4' : 'mic.webm';
+          formData.append('audio', audioBlob, ext);
           formData.append('languageCode', language);
 
           try {

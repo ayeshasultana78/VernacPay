@@ -6,16 +6,18 @@ services:
   - type: web
     name: vernacpay-global-app
     runtime: node
-    plan: starter
+    plan: free
     region: oregon
     buildCommand: npm install && npm run build
     startCommand: npm run start
-    healthCheckPath: /api/health
+    healthCheckPath: /healthz
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: 10000
+      - key: APP_BASE_URL
+        sync: false
       - key: PAYPAL_BASE_URL
         value: https://api-m.sandbox.paypal.com
       - key: FX_INR_TO_USD_RATE
@@ -39,7 +41,7 @@ services:
       - key: SARVAM_API_KEY
         sync: false
       - key: SARVAM_STT_MODEL
-        value: saaras:v1
+        value: saaras:v3
       - key: SARVAM_TTS_MODEL
         value: bulbul:v3
       - key: GROQ_API_KEY
@@ -50,7 +52,7 @@ services:
 databases:
   # 2. Managed Authoritative PostgreSQL Database
   - name: vernacpay-db
-    plan: starter
+    plan: free
     region: oregon
     databaseName: vernacpay_global
     user: vernacpay_user

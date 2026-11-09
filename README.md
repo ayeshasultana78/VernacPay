@@ -132,7 +132,7 @@ To receive commercial PayPal cross-border export payments in India, merchants mu
 
 To test the complete end-to-end checkout flow as an international buyer:
 * **PayPal Sandbox Personal Buyer Email:** `sb-pj4347w53813178@personal.example.com`
-* **PayPal Sandbox Personal Buyer Password:** `5f87)Xy8`
+* **PayPal Sandbox Personal Buyer Password:** `[Placeholder: Set via PAYPAL_SANDBOX_BUYER_PASSWORD / Provided in Portal]`
 * **Live App URL:** *(Deployed on Render)*
 
 ---

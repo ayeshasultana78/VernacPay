@@ -28,19 +28,46 @@ app.use(express.urlencoded({ extended: true }));
 
 // --- API Endpoints ---
 
-// 1. Health & Config
+// 0. Render Deployment Health Check Endpoint
+app.get('/healthz', (req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 1. Health & Config Endpoint
 app.get('/api/health', (req: Request, res: Response) => {
   const isLive = Boolean(process.env.PAYPAL_CLIENT_ID && !process.env.PAYPAL_CLIENT_ID.startsWith('mock-'));
+  const hasGroq = Boolean(process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.includes('your_') && !process.env.GROQ_API_KEY.startsWith('mock-'));
+  const hasSarvam = Boolean(process.env.SARVAM_API_KEY && !process.env.SARVAM_API_KEY.includes('your_') && !process.env.SARVAM_API_KEY.startsWith('mock-'));
+
   res.json({
     status: 'HEALTHY',
     service: 'VernacPay-Global v2.0',
     environment: isLive ? 'PAYPAL_LIVE_SANDBOX' : 'SIMULATED_DEMO',
     mode: isLive ? 'LIVE' : 'DEMO',
     database_engine: db.isPostgres ? 'POSTGRESQL' : 'IN_MEMORY_PERSISTENT',
+    database_connected: db.isPostgres,
     fx_rate: fxService.getCurrentRate('INR', 'USD'),
+    providers: {
+      paypal: {
+        status: isLive ? 'CONFIGURED_LIVE_SANDBOX' : 'MOCK_FALLBACK',
+        base_url: process.env.PAYPAL_BASE_URL || 'https://api-m.sandbox.paypal.com',
+      },
+      postgres: {
+        connected: db.isPostgres,
+        engine: db.isPostgres ? 'MANAGED_POSTGRESQL' : 'IN_MEMORY',
+      },
+      sarvam: {
+        status: hasSarvam ? 'CONFIGURED' : 'DEMO_PRESETS_ACTIVE',
+        models: { stt: 'saaras:v3', tts: 'bulbul:v3' },
+      },
+      groq: {
+        status: hasGroq ? 'CONFIGURED' : 'LOCAL_PARSER_ACTIVE',
+        model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+      },
+    },
     sandbox_buyer: {
       email: process.env.PAYPAL_SANDBOX_BUYER_EMAIL || 'sb-pj4347w53813178@personal.example.com',
-      password: process.env.PAYPAL_SANDBOX_BUYER_PASSWORD || '5f87)Xy8',
+      password: process.env.PAYPAL_SANDBOX_BUYER_PASSWORD ? '••••••••' : '[Configured in Environment]',
     },
     timestamp: new Date().toISOString(),
   });
@@ -175,6 +202,13 @@ app.post('/api/voice/process', upload.single('audio'), async (req: Request, res:
 
 // 10. Confirm Staged Financial Action (Explicit Merchant Authorization)
 app.post('/api/staged/confirm', async (req: Request, res: Response) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp, 20, 60 * 1000)) {
+    return res.status(429).json({
+      error: 'RATE_LIMIT_EXCEEDED',
+      message: 'Rate limit: 20 confirmations per minute per judge to protect API quotas. Please wait a moment.',
+    });
+  }
   try {
     const { authCode } = req.body;
     if (!authCode) {
@@ -340,6 +374,60 @@ app.get('/api/paypal/return', async (req: Request, res: Response) => {
   }
 });
 
+// 14b. PayPal Cancel URL Handler (Buyer cancelled on PayPal Checkout)
+app.get('/api/paypal/cancel', async (req: Request, res: Response) => {
+  try {
+    const orderId = (req.query.token || req.query.orderId) as string;
+    if (orderId) {
+      const txs = await db.listTransactions();
+      const tx = txs.find(t => t.paypal_order_id === orderId || t.id === orderId);
+      if (tx) {
+        tx.status = 'CANCELLED';
+        tx.updated_at = new Date().toISOString();
+        await db.saveTransaction(tx);
+        await auditService.recordStage({
+          stage: '4. PAYPAL API EXECUTED',
+          actionName: 'order_cancellation',
+          status: 'WARNING',
+          details: `Buyer cancelled PayPal checkout for Order ${orderId}. Row updated to CANCELLED.`,
+        });
+      }
+    }
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Order Cancelled - VernacPay-Global</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #07111F; color: #F8FAFC; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+            .card { background: #0D1929; border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 16px; padding: 32px; max-width: 440px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+            .icon { width: 56px; height: 56px; background: rgba(239, 68, 68, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #EF4444; font-size: 28px; }
+            h1 { font-size: 20px; margin: 0 0 8px; color: #EF4444; }
+            p { font-size: 14px; color: #94A3B8; margin: 0 0 20px; line-height: 1.5; }
+            .badge { display: inline-block; background: #162840; padding: 6px 12px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #F87171; margin-bottom: 24px; }
+            a { display: inline-block; background: #334155; color: #F8FAFC; font-weight: 600; text-decoration: none; padding: 10px 24px; border-radius: 10px; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="icon">✕</div>
+            <h1>PayPal Checkout Cancelled</h1>
+            <p>Buyer chose to cancel or return from PayPal checkout. The transaction has been updated to CANCELLED on the ledger.</p>
+            ${orderId ? `<div class="badge">Order ID: ${orderId}</div>` : ''}
+            <div>
+              <a href="/?order_cancelled=true">Return to VernacPay Dashboard</a>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (err: any) {
+    res.status(500).send('Error processing cancellation: ' + err.message);
+  }
+});
+
 // 15. Real-Time Order Polling Fallback (For instant UI updates while webhook travels)
 app.get('/api/paypal/order-status/:orderId', async (req: Request, res: Response) => {
   try {
@@ -397,6 +485,20 @@ async function startServer() {
   const existing = await db.listTransactions();
   if (existing.length === 0) {
     await seedDatabase();
+  }
+
+  // Startup warm check
+  console.log('[Startup Warm Check] Verifying system readiness...');
+  try {
+    const isLive = Boolean(process.env.PAYPAL_CLIENT_ID && !process.env.PAYPAL_CLIENT_ID.startsWith('mock-'));
+    if (isLive) {
+      await paypalService.getAccessToken();
+      console.log('  ✓ PayPal Sandbox OAuth connection verified');
+    } else {
+      console.log('  ! PayPal running in mock credentials mode');
+    }
+  } catch (err: any) {
+    console.warn('  ✗ PayPal Sandbox warm check failed:', err.message);
   }
 
   app.listen(port, () => {

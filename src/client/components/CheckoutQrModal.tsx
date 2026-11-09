@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { QrCode, ExternalLink, CheckCircle2, X, Sparkles, ShieldCheck } from 'lucide-react';
 import { PayPalTransaction } from '../../types';
 
@@ -17,6 +17,32 @@ export const CheckoutQrModal: React.FC<CheckoutQrModalProps> = ({
 }) => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [captured, setCaptured] = useState(false);
+
+  // Poll order status every 2 seconds for live convergence while QR is scanned
+  useEffect(() => {
+    if (!isOpen || !transaction?.paypal_order_id || transaction.status === 'VERIFIED_PAID' || captured) {
+      return;
+    }
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/paypal/order-status/${transaction.paypal_order_id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'VERIFIED_PAID') {
+            setCaptured(true);
+            setTimeout(() => {
+              onClose();
+            }, 1800);
+          }
+        }
+      } catch {
+        // network polling fallback
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isOpen, transaction, captured, onClose]);
 
   if (!isOpen || !transaction) return null;
 

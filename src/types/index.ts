@@ -62,7 +62,8 @@ export type TransactionStatus =
   | 'AWAITING_BUYER' 
   | 'SUBSCRIPTION_ACTIVE' 
   | 'REFUNDED' 
-  | 'DISPUTED';
+  | 'DISPUTED'
+  | 'CANCELLED';
 
 export interface PayPalTransaction {
   id: string;
