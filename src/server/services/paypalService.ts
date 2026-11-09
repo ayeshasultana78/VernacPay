@@ -126,6 +126,7 @@ export class PayPalService {
 
     try {
       const token = await this.getAccessToken();
+      const appBase = process.env.APP_BASE_URL || process.env.RENDER_EXTERNAL_URL || 'http://localhost:3000';
       const res = await fetch(`${this.baseUrl}/v2/checkout/orders`, {
         method: 'POST',
         headers: {
@@ -165,8 +166,8 @@ export class PayPalService {
             brand_name: 'VernacPay Global Export',
             landing_page: 'NO_PREFERENCE',
             user_action: 'PAY_NOW',
-            return_url: 'http://localhost:3000/api/paypal/return',
-            cancel_url: 'http://localhost:3000/api/paypal/cancel',
+            return_url: `${appBase}/api/paypal/return`,
+            cancel_url: `${appBase}/api/paypal/cancel`,
           },
         }),
       });
@@ -227,18 +228,29 @@ export class PayPalService {
         },
       });
       const data = await res.json() as any;
+
+      if (!res.ok) {
+        const issue = data.details?.[0]?.issue || data.name || res.statusText;
+        const desc = data.details?.[0]?.description || data.message || 'Capture request rejected by PayPal';
+        throw new Error(`[PayPal Capture ${res.status}] ${issue}: ${desc}`);
+      }
+
       const capture = data.purchase_units?.[0]?.payments?.captures?.[0];
       return {
         id: data.id,
         status: data.status || 'COMPLETED',
-        capture_id: capture?.id || `CAP_${orderId}_01`,
+        capture_id: capture?.id,
       };
     } catch (err: any) {
-      console.warn('[PayPal captureOrder] Simulated fallback:', err.message);
+      if (!this.isMockCredentials() && process.env.DEMO_MODE !== 'true') {
+        // FAIL CLOSED: Never fake a capture in LIVE mode
+        throw err;
+      }
+      console.warn('[PayPal captureOrder] DEMO_MODE simulator fallback:', err.message);
       return {
         id: orderId,
-        status: 'COMPLETED',
-        capture_id: `CAP_${orderId}_01`,
+        status: 'SIMULATED_COMPLETED',
+        capture_id: `SIM_CAP_${orderId.slice(0, 10)}`,
       };
     }
   }
@@ -346,7 +358,11 @@ export class PayPalService {
       });
 
       const data = await res.json() as any;
-      const invId = data.id || `INV2-${Date.now()}`;
+      if (!res.ok) {
+        throw new Error(data.message || `PayPal Invoicing failed with status ${res.status}`);
+      }
+
+      const invId = data.id;
       const qrData = `https://www.sandbox.paypal.com/invoice/p/#${invId}`;
       const qrBase64 = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(qrData)}`;
 
@@ -357,8 +373,11 @@ export class PayPalService {
         qr_code_base64: qrBase64,
       };
     } catch (err: any) {
+      if (!this.isMockCredentials()) {
+        throw err;
+      }
       console.warn('[PayPal createDraftInvoice] Simulated fallback:', err.message);
-      const invId = `INV2-R${Math.floor(100 + Math.random() * 899)}K-Z4MQ-${Math.floor(1000 + Math.random() * 8999)}`;
+      const invId = `INV2-SIM-${Math.floor(100 + Math.random() * 899)}K-Z4MQ-${Math.floor(1000 + Math.random() * 8999)}`;
       const qrData = `https://www.sandbox.paypal.com/invoice/p/#${invId}`;
       return {
         id: invId,
@@ -402,7 +421,10 @@ export class PayPalService {
         },
       });
       const data = await res.json() as any;
-      return data.image || `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://www.sandbox.paypal.com/invoice/p/#${invoiceId}`;
+      if (data.image) {
+        return data.image.startsWith('data:') ? data.image : `data:image/png;base64,${data.image}`;
+      }
+      return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://www.sandbox.paypal.com/invoice/p/#${invoiceId}`;
     } catch {
       return `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=https://www.sandbox.paypal.com/invoice/p/#${invoiceId}`;
     }

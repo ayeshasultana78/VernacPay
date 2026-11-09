@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster, toast } from 'sonner';
-import { TopBar } from './components/TopBar';
-import { TrustBar } from './components/TrustBar';
-import { WorkspaceLayout } from './components/WorkspaceLayout';
-import { VoiceAgentPane } from './components/VoiceAgentPane';
+import { AppSidebar } from './components/AppSidebar';
+import { AppHeader } from './components/AppHeader';
+import { TrustBoundary } from './components/TrustBoundary';
+import { OverviewView } from './components/views/OverviewView';
+import { VoiceStudioView } from './components/views/VoiceStudioView';
+import { InvoicesView } from './components/views/InvoicesView';
+import { ShipmentsView } from './components/views/ShipmentsView';
+import { AuditTrailView } from './components/views/AuditTrailView';
 import { AgGridCommandCenter } from './components/AgGridCommandCenter';
 import { TrustBoundaryDrawer } from './components/TrustBoundaryDrawer';
 import { CheckoutQrModal } from './components/CheckoutQrModal';
@@ -33,8 +37,12 @@ export const AppContent: React.FC = () => {
     theme,
     language,
     setLanguage,
+    activeView,
+    setActiveView,
     isComplianceOpen,
     setComplianceOpen,
+    isAuditDrawerOpen,
+    setAuditDrawerOpen,
     resetStages,
     setStageState,
   } = useAppStore();
@@ -253,8 +261,8 @@ export const AppContent: React.FC = () => {
 
         mediaRecorder.start();
         setIsRecording(true);
-      } catch (err) {
-        console.warn('Microphone permission not granted or unavailable, executing demo preset.');
+      } catch {
+        console.warn('Microphone permission not granted, executing demo preset.');
         handleSelectSampleCommand(
           language === 'te-IN'
             ? 'telugu_invoice_sarah'
@@ -266,7 +274,7 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // 5. Merchant Authorizes Staged Action (Gate 3 -> Gate 4)
+  // 5. Merchant Authorizes Staged Action
   const handleConfirmStaged = async (authCode: string) => {
     setIsLoading(true);
     setStageState(3, 'active');
@@ -376,44 +384,92 @@ export const AppContent: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-main)] flex flex-col font-sans transition-colors duration-200">
-      {/* 56px Top Bar */}
-      <TopBar />
+    <div className="min-h-screen bg-[var(--bg-base)] text-[var(--text-primary)] flex font-sans antialiased">
+      {/* 1. Left Persistent Sidebar */}
+      <AppSidebar />
 
-      {/* Sticky 5-Stage Trust Boundary Bar */}
-      <TrustBar />
+      {/* 2. Main Application Column */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+        {/* Top Header */}
+        <AppHeader />
 
-      {/* Main Split-Screen Workspace (Resizable on desktop, tabs on mobile/tablet) */}
-      <WorkspaceLayout
-        leftPane={
-          <VoiceAgentPane
-            currentLanguage={language}
-            isRecording={isRecording}
-            onToggleRecord={handleToggleRecord}
-            isLoading={isLoading}
-            transcriptNative={transcriptNative}
-            transcriptEnglish={transcriptEnglish}
-            stagedConfirmation={stagedConfirmation}
-            onConfirmStaged={handleConfirmStaged}
-            onCancelStaged={handleCancelStaged}
-            ttsAudioBase64={ttsAudioBase64}
-          />
-        }
-        rightPane={
-          <AgGridCommandCenter
-            transactions={transactions}
-            onOpenQrModal={(tx) => setSelectedQrTx(tx)}
-            onSendReminder={handleSendReminderFromGrid}
-            onAddTracking={handleAddTrackingFromGrid}
-            sseFilterCommand={sseFilterCommand}
-          />
-        }
-      />
+        {/* Responsive Trust Boundary Stepper */}
+        <TrustBoundary />
 
-      {/* Bottom Collapsible Drawer: Live Trust Boundary & Cryptographic Audit Stream */}
+        {/* Dynamic Main View Area */}
+        <main className="flex-1 overflow-y-auto">
+          {activeView === 'overview' && (
+            <OverviewView
+              transactions={transactions}
+              onOpenQrModal={(tx) => setSelectedQrTx(tx)}
+              onSendPreset={handleSelectSampleCommand}
+              isLoadingVoice={isLoading}
+            />
+          )}
+
+          {activeView === 'voice' && (
+            <VoiceStudioView
+              currentLanguage={language}
+              isRecording={isRecording}
+              onToggleRecord={handleToggleRecord}
+              isLoading={isLoading}
+              transcriptNative={transcriptNative}
+              transcriptEnglish={transcriptEnglish}
+              stagedConfirmation={stagedConfirmation}
+              onConfirmStaged={handleConfirmStaged}
+              onCancelStaged={handleCancelStaged}
+              ttsAudioBase64={ttsAudioBase64}
+              onSendPreset={handleSelectSampleCommand}
+            />
+          )}
+
+          {activeView === 'transactions' && (
+            <AgGridCommandCenter
+              transactions={transactions}
+              onOpenQrModal={(tx) => setSelectedQrTx(tx)}
+              onSendReminder={handleSendReminderFromGrid}
+              onAddTracking={handleAddTrackingFromGrid}
+              sseFilterCommand={sseFilterCommand}
+            />
+          )}
+
+          {activeView === 'invoices' && (
+            <InvoicesView
+              transactions={transactions}
+              onOpenQrModal={(tx) => setSelectedQrTx(tx)}
+              onSendReminder={handleSendReminderFromGrid}
+              onSendPreset={handleSelectSampleCommand}
+            />
+          )}
+
+          {activeView === 'shipments' && (
+            <ShipmentsView
+              transactions={transactions}
+              onAddTracking={handleAddTrackingFromGrid}
+            />
+          )}
+
+          {activeView === 'audit' && (
+            <AuditTrailView
+              auditEvents={auditEvents}
+              onRefresh={fetchAuditEvents}
+            />
+          )}
+
+          {activeView === 'compliance' && (
+            <div className="p-6 max-w-4xl mx-auto">
+              <ComplianceModal
+                isOpen={true}
+                onClose={() => setActiveView('overview')}
+              />
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* 3. Global Overlays & Modals */}
       <TrustBoundaryDrawer events={auditEvents} />
 
-      {/* Live PayPal QR & Sandbox Checkout Modal */}
       <CheckoutQrModal
         transaction={selectedQrTx}
         isOpen={!!selectedQrTx}
@@ -421,16 +477,15 @@ export const AppContent: React.FC = () => {
         onSimulateCapture={handleSimulateCapture}
       />
 
-      {/* Indian Exporter Compliance Readiness Modal */}
       <ComplianceModal
         isOpen={isComplianceOpen}
         onClose={() => setComplianceOpen(false)}
       />
 
-      {/* Command Palette (⌘K / Ctrl+K) */}
       <CommandPalette
         onRunSample={handleSelectSampleCommand}
         onFilterGrid={(status) => {
+          setActiveView('transactions');
           setSseFilterCommand({
             filterModel: status ? { status: { type: 'equals', filter: status } } : null,
             speechAnnouncement: status ? `Filtered to ${status}` : 'Cleared filters',
@@ -441,7 +496,6 @@ export const AppContent: React.FC = () => {
         }}
       />
 
-      {/* Sonner Toast Provider */}
       <Toaster
         theme={theme === 'dark' ? 'dark' : 'light'}
         position="bottom-right"

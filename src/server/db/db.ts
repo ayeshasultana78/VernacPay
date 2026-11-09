@@ -64,9 +64,14 @@ class DatabaseManager {
           client.release();
         }
       } catch (err: any) {
+        if (process.env.NODE_ENV === 'production' && process.env.DEMO_MODE !== 'true') {
+          throw new Error(`[CRITICAL] Production database connection failed: ${err.message}. Refusing to start in memory mode when DEMO_MODE is not true.`);
+        }
         console.warn(`[DB] PostgreSQL not reachable (${err.message}). Using high-performance Memory/SQLite fallback engine.`);
         this.isPostgres = false;
       }
+    } else if (process.env.NODE_ENV === 'production' && process.env.DEMO_MODE !== 'true') {
+      throw new Error('[CRITICAL] DATABASE_URL is not set in production. Set DATABASE_URL or set DEMO_MODE=true.');
     }
     console.log('[DB] Running with in-memory authoritative store.');
   }

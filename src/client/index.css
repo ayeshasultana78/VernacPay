@@ -7,104 +7,126 @@
 
 @layer base {
   :root {
-    /* Calm Trust Fintech Palette - Light Mode */
-    --bg-base: oklch(0.985 0.005 255);
-    --bg-surface: oklch(1 0 0);
-    --bg-surface-raised: oklch(0.96 0.008 255);
-    --bg-surface-sunken: oklch(0.93 0.01 255);
-    
-    --border-subtle: oklch(0.88 0.01 255);
-    --border-strong: oklch(0.78 0.015 255);
-    --border-focus: oklch(0.55 0.20 245);
+    /* World-Class Deep Midnight FinTech Palette (Default Dark Mode) */
+    --bg-base: #07111F;             /* Deep Midnight Navy */
+    --bg-surface: #0D1929;          /* Secondary Surface / Container */
+    --bg-surface-raised: #111F32;   /* Elevated Card Surface */
+    --bg-surface-highlight: #162840;/* Active Hover / High-Contrast Card */
+    --bg-surface-sunken: #050D18;   /* Inset Panels / Code Blocks */
 
-    --text-main: oklch(0.16 0.02 255);
-    --text-muted: oklch(0.48 0.02 255);
-    --text-dim: oklch(0.62 0.015 255);
+    --border-subtle: #1A2A42;       /* Subtle 1px Hairline */
+    --border-medium: #243B5C;       /* Card Edge Boundary */
+    --border-focus: #18C995;        /* Emerald Focus Ring */
 
-    /* Brand & Semantic */
-    --accent-primary: oklch(0.55 0.20 245); /* PayPal Blue #0070E0 */
-    --accent-hover: oklch(0.50 0.22 245);
-    --accent-subtle: oklch(0.93 0.04 245);
+    --text-primary: #F3F6FC;        /* Soft High-Contrast White */
+    --text-secondary: #8E9EB5;      /* Muted Slate / Metadata */
+    --text-tertiary: #5A6D88;       /* Subtle Hint Text */
 
-    --status-verified: oklch(0.62 0.18 150); /* Emerald */
-    --status-verified-bg: oklch(0.93 0.05 150);
-    --status-staged: oklch(0.70 0.16 75); /* Amber */
-    --status-staged-bg: oklch(0.95 0.05 75);
-    --status-unpaid: oklch(0.60 0.22 25); /* Rose */
-    --status-unpaid-bg: oklch(0.94 0.05 25);
+    /* Semantic Accents */
+    --accent-emerald: #18C995;      /* Verified Paid / Positive Flow */
+    --accent-emerald-subtle: rgba(24, 201, 149, 0.12);
+    --accent-emerald-border: rgba(24, 201, 149, 0.3);
 
-    --glass-bg: oklch(1 0 0 / 0.85);
-    --glass-border: oklch(0.88 0.01 255 / 0.6);
+    --accent-blue: #4D9DFF;         /* PayPal / Primary Flow */
+    --accent-blue-subtle: rgba(77, 157, 255, 0.12);
+    --accent-blue-border: rgba(77, 157, 255, 0.3);
+
+    --accent-amber: #F59E0B;        /* Staged / Needs Confirmation */
+    --accent-amber-subtle: rgba(245, 158, 11, 0.12);
+    --accent-amber-border: rgba(245, 158, 11, 0.3);
+
+    --accent-coral: #F87171;        /* Blocked / Overdue */
+    --accent-coral-subtle: rgba(248, 113, 113, 0.12);
+
+    --glass-surface: rgba(13, 25, 41, 0.85);
   }
 
-  .dark {
-    /* Calm Trust Fintech Palette - Dark Mode (Ink Navy Base) */
-    --bg-base: oklch(0.15 0.04 255); /* Deep Ink Navy ~#0B1B3A */
-    --bg-surface: oklch(0.19 0.04 255); /* Surface Card */
-    --bg-surface-raised: oklch(0.24 0.04 255); /* Hover / Raised */
-    --bg-surface-sunken: oklch(0.12 0.035 255);
+  .light {
+    --bg-base: #F8FAFC;
+    --bg-surface: #FFFFFF;
+    --bg-surface-raised: #F1F5F9;
+    --bg-surface-highlight: #E2E8F0;
+    --bg-surface-sunken: #EDF2F7;
 
-    --border-subtle: oklch(0.28 0.03 255 / 0.75);
-    --border-strong: oklch(0.38 0.035 255);
-    --border-focus: oklch(0.65 0.18 245);
+    --border-subtle: #E2E8F0;
+    --border-medium: #CBD5E1;
+    --border-focus: #10B981;
 
-    --text-main: oklch(0.96 0.005 255);
-    --text-muted: oklch(0.70 0.02 255);
-    --text-dim: oklch(0.50 0.02 255);
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-tertiary: #94A3B8;
 
-    /* Brand & Semantic */
-    --accent-primary: oklch(0.62 0.20 245); /* Vibrant PayPal Blue */
-    --accent-hover: oklch(0.68 0.20 245);
-    --accent-subtle: oklch(0.25 0.06 245);
+    --accent-emerald: #10B981;
+    --accent-emerald-subtle: rgba(16, 185, 129, 0.1);
+    --accent-emerald-border: rgba(16, 185, 129, 0.3);
 
-    --status-verified: oklch(0.68 0.18 150); /* Emerald */
-    --status-verified-bg: oklch(0.25 0.06 150);
-    --status-staged: oklch(0.76 0.16 75); /* Amber */
-    --status-staged-bg: oklch(0.26 0.06 75);
-    --status-unpaid: oklch(0.65 0.22 25); /* Rose */
-    --status-unpaid-bg: oklch(0.25 0.07 25);
+    --accent-blue: #0284C7;
+    --accent-blue-subtle: rgba(2, 132, 199, 0.1);
+    --accent-blue-border: rgba(2, 132, 199, 0.3);
 
-    --glass-bg: oklch(0.17 0.04 255 / 0.85);
-    --glass-border: oklch(0.32 0.03 255 / 0.6);
+    --accent-amber: #D97706;
+    --accent-amber-subtle: rgba(217, 119, 6, 0.1);
+    --accent-amber-border: rgba(217, 119, 6, 0.3);
+
+    --accent-coral: #EF4444;
+    --accent-coral-subtle: rgba(239, 68, 68, 0.1);
+
+    --glass-surface: rgba(255, 255, 255, 0.9);
+  }
+
+  body {
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
   }
 }
 
-/* Custom Scrollbars */
+/* Custom Refined Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 4px;
+  background: var(--border-medium);
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--text-tertiary);
 }
 
-/* AG Grid Calm Trust Quartz Adaptation (Community Edition Only) */
-.ag-theme-quartz,
-.ag-theme-quartz-dark {
+/* AG Grid World-Class Theme Adaptation (Pure Community Edition) */
+.ag-theme-quartz-dark,
+.ag-theme-quartz {
   --ag-background-color: var(--bg-surface);
   --ag-header-background-color: var(--bg-surface-raised);
   --ag-odd-row-background-color: var(--bg-surface);
-  --ag-row-hover-color: var(--bg-surface-raised);
-  --ag-selected-row-background-color: var(--accent-subtle);
+  --ag-row-hover-color: var(--bg-surface-highlight);
+  --ag-selected-row-background-color: var(--accent-blue-subtle);
   --ag-border-color: var(--border-subtle);
-  --ag-header-foreground-color: var(--text-muted);
-  --ag-foreground-color: var(--text-main);
-  --ag-font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --ag-header-foreground-color: var(--text-secondary);
+  --ag-foreground-color: var(--text-primary);
+  --ag-font-family: 'Inter', system-ui, sans-serif;
   --ag-font-size: 13px;
   --ag-grid-size: 6px;
-  --ag-row-height: 48px;
-  --ag-header-height: 42px;
-  --ag-cell-horizontal-padding: 14px;
+  --ag-row-height: 52px;
+  --ag-header-height: 44px;
+  --ag-cell-horizontal-padding: 16px;
 }
 
-/* Tabular Numbers for Monospace Figures */
+.ag-header-cell-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 11px;
+}
+
+/* Tabular Numbers for Precise Monospace Figures */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
@@ -112,15 +134,15 @@
 /* Indic Script line height support */
 .font-telugu {
   font-family: 'Noto Sans Telugu', sans-serif;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
 .font-devanagari {
   font-family: 'Noto Sans Devanagari', sans-serif;
-  line-height: 1.7;
+  line-height: 1.75;
 }
 
-/* Focus Visible Utility */
+/* Accessible Focus Rings */
 :focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;

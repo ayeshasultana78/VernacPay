@@ -7,6 +7,26 @@ import {
   LedgerRow 
 } from '../../contracts';
 
+export type NavigationView = 
+  | 'overview' 
+  | 'voice' 
+  | 'transactions' 
+  | 'invoices' 
+  | 'shipments' 
+  | 'compliance' 
+  | 'audit';
+
+export interface BackendConfig {
+  appMode: 'MOCK' | 'SANDBOX' | 'PRODUCTION';
+  isLivePayPal: boolean;
+  service: string;
+  fxRate: number;
+  sandboxBuyer?: {
+    email: string;
+    password?: string;
+  };
+}
+
 export interface AppState {
   // Theme
   theme: 'light' | 'dark';
@@ -17,15 +37,24 @@ export interface AppState {
   language: LanguageCode;
   setLanguage: (lang: LanguageCode) => void;
 
+  // Navigation & Layout
+  activeView: NavigationView;
+  setActiveView: (view: NavigationView) => void;
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  toggleSidebar: () => void;
+
   // Modals & Panels
   isComplianceOpen: boolean;
   setComplianceOpen: (open: boolean) => void;
   isCommandPaletteOpen: boolean;
   setCommandPaletteOpen: (open: boolean) => void;
+  isAuditDrawerOpen: boolean;
+  setAuditDrawerOpen: (open: boolean) => void;
   qrModalRow: LedgerRow | null;
   setQrModalRow: (row: LedgerRow | null) => void;
 
-  // Responsive Workspace View
+  // Backwards compatibility for responsive tab
   activeTab: 'workspace' | 'ledger';
   setActiveTab: (tab: 'workspace' | 'ledger') => void;
 
@@ -52,12 +81,15 @@ export interface AppState {
   setIsRecording: (recording: boolean) => void;
   isProcessingVoice: boolean;
   setIsProcessingVoice: (processing: boolean) => void;
+
+  // Backend Config
+  backendConfig: BackendConfig | null;
+  setBackendConfig: (config: BackendConfig | null) => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => {
-  // Initialize theme from localStorage or system preference
   const savedTheme = (typeof window !== 'undefined' && localStorage.getItem('vernacpay_theme') as 'light' | 'dark') ||
-    (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'dark');
 
   return {
     theme: savedTheme,
@@ -65,8 +97,10 @@ export const useAppStore = create<AppState>((set, get) => {
       localStorage.setItem('vernacpay_theme', theme);
       if (theme === 'dark') {
         document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
       } else {
         document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
       }
       set({ theme });
     },
@@ -78,10 +112,18 @@ export const useAppStore = create<AppState>((set, get) => {
     language: 'te-IN',
     setLanguage: (language) => set({ language }),
 
+    activeView: 'overview',
+    setActiveView: (activeView) => set({ activeView }),
+    sidebarCollapsed: typeof window !== 'undefined' ? window.innerWidth < 768 : false,
+    setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+    toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+
     isComplianceOpen: false,
     setComplianceOpen: (isComplianceOpen) => set({ isComplianceOpen }),
     isCommandPaletteOpen: false,
     setCommandPaletteOpen: (isCommandPaletteOpen) => set({ isCommandPaletteOpen }),
+    isAuditDrawerOpen: false,
+    setAuditDrawerOpen: (isAuditDrawerOpen) => set({ isAuditDrawerOpen }),
     qrModalRow: null,
     setQrModalRow: (qrModalRow) => set({ qrModalRow }),
 
@@ -146,5 +188,13 @@ export const useAppStore = create<AppState>((set, get) => {
     setIsRecording: (isRecording) => set({ isRecording }),
     isProcessingVoice: false,
     setIsProcessingVoice: (isProcessingVoice) => set({ isProcessingVoice }),
+
+    backendConfig: {
+      appMode: 'MOCK',
+      isLivePayPal: false,
+      service: 'VernacPay-Global v2.0',
+      fxRate: 84.00,
+    },
+    setBackendConfig: (backendConfig) => set({ backendConfig }),
   };
 });

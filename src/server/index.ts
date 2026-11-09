@@ -30,11 +30,18 @@ app.use(express.urlencoded({ extended: true }));
 
 // 1. Health & Config
 app.get('/api/health', (req: Request, res: Response) => {
+  const isLive = Boolean(process.env.PAYPAL_CLIENT_ID && !process.env.PAYPAL_CLIENT_ID.startsWith('mock-'));
   res.json({
     status: 'HEALTHY',
     service: 'VernacPay-Global v2.0',
-    environment: 'PAYPAL_SANDBOX',
+    environment: isLive ? 'PAYPAL_LIVE_SANDBOX' : 'SIMULATED_DEMO',
+    mode: isLive ? 'LIVE' : 'DEMO',
+    database_engine: db.isPostgres ? 'POSTGRESQL' : 'IN_MEMORY_PERSISTENT',
     fx_rate: fxService.getCurrentRate('INR', 'USD'),
+    sandbox_buyer: {
+      email: process.env.PAYPAL_SANDBOX_BUYER_EMAIL || 'sb-gf0ug53749798@personal.example.com',
+      password: process.env.PAYPAL_SANDBOX_BUYER_PASSWORD || '1fST*@il',
+    },
     timestamp: new Date().toISOString(),
   });
 });
@@ -94,8 +101,31 @@ app.get('/api/demo-presets', (req: Request, res: Response) => {
   res.json(DEMO_PRESETS);
 });
 
+// --- Per-IP Rate Limiter for Voice Ingestion (15 req/min to protect hackathon quotas) ---
+const ipRequestTimestamps = new Map<string, number[]>();
+function checkRateLimit(ip: string, limit = 15, windowMs = 60 * 1000): boolean {
+  const now = Date.now();
+  const timestamps = (ipRequestTimestamps.get(ip) || []).filter(t => now - t < windowMs);
+  if (timestamps.length >= limit) {
+    return false;
+  }
+  timestamps.push(now);
+  ipRequestTimestamps.set(ip, timestamps);
+  return true;
+}
+
 // 9. Multilingual Voice Processing
 app.post('/api/voice/process', upload.single('audio'), async (req: Request, res: Response) => {
+  const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIp, 15, 60 * 1000)) {
+    return res.status(429).json({
+      type: 'REJECTED',
+      error: 'RATE_LIMIT_EXCEEDED',
+      message_english: 'Rate limit: 15 voice requests per minute per judge to protect API quotas. Please wait a moment.',
+      message_native: 'రేట్ పరిమితి దాటింది: API కోటాను రక్షించడానికి నిమిషానికి 15 అభ్యర్థనలు మాత్రమే అనుమతించబడతాయి. దయచేసి కొద్దిసేపు వేచి ఉండండి.',
+    });
+  }
+
   try {
     const languageCode = (req.body.languageCode || 'te-IN') as LanguageCode;
     const presetKey = req.body.presetKey;
@@ -219,7 +249,17 @@ app.post('/api/paypal/webhook', async (req: Request, res: Response) => {
     const eventType = event.event_type;
     const eventId = event.id;
 
-    if (eventType === 'PAYMENT.CAPTURE.COMPLETED' || eventType === 'CHECKOUT.ORDER.APPROVED') {
+    if (eventType === 'INVOICING.INVOICE.PAID') {
+      const resource = event.resource;
+      const invoiceId = resource.id;
+      const captureId = resource.payments?.[0]?.payment_id || `PAY_${Date.now()}`;
+
+      await orchestrator.processVerifiedPaymentCapture({
+        invoiceId,
+        captureId,
+        webhookEventId: eventId,
+      });
+    } else if (eventType === 'PAYMENT.CAPTURE.COMPLETED' || eventType === 'CHECKOUT.ORDER.APPROVED') {
       const resource = event.resource;
       const orderId = resource.id || resource.supplementary_data?.related_ids?.order_id;
       const captureId = resource.id;
@@ -234,6 +274,95 @@ app.post('/api/paypal/webhook', async (req: Request, res: Response) => {
     res.status(200).json({ received: true });
   } catch (err: any) {
     console.error('[Webhook Error]:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 14. PayPal Return URL Handler (Fallback for Webhook Delay / Direct Buyer Capture)
+app.get('/api/paypal/return', async (req: Request, res: Response) => {
+  try {
+    const orderId = (req.query.token || req.query.orderId) as string;
+    const payerId = req.query.PayerID as string;
+
+    if (!orderId) {
+      return res.status(400).send('Missing PayPal Order Token');
+    }
+
+    // Capture payment synchronously
+    const captureResult = await paypalService.captureOrder(orderId);
+
+    // Process verified capture in orchestrator with idempotency
+    const updatedTx = await orchestrator.processVerifiedPaymentCapture({
+      orderId,
+      captureId: captureResult.capture_id,
+    });
+
+    // Notify connected UI via audit service
+    await auditService.recordStage({
+      stage: '5. WEBHOOK VERIFIED & LEDGER LOCKED',
+      actionName: 'return_url_capture',
+      status: 'SUCCESS',
+      details: `PayPal return URL captured synchronously for Order ${orderId} (Payer: ${payerId || 'Sandbox Buyer'}).`,
+    });
+
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Payment Successful - VernacPay-Global</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: system-ui, -apple-system, sans-serif; background: #07111F; color: #F8FAFC; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; }
+            .card { background: #0D1929; border: 1px solid rgba(24, 201, 149, 0.3); border-radius: 16px; padding: 32px; max-width: 440px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); }
+            .icon { width: 56px; height: 56px; background: rgba(24, 201, 149, 0.15); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; color: #18C995; font-size: 28px; }
+            h1 { font-size: 20px; margin: 0 0 8px; color: #18C995; }
+            p { font-size: 14px; color: #94A3B8; margin: 0 0 20px; line-height: 1.5; }
+            .badge { display: inline-block; background: #162840; padding: 6px 12px; border-radius: 8px; font-family: monospace; font-size: 12px; color: #38BDF8; margin-bottom: 24px; }
+            a { display: inline-block; background: #18C995; color: #020617; font-weight: 600; text-decoration: none; padding: 10px 24px; border-radius: 10px; font-size: 14px; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="icon">✓</div>
+            <h1>Payment Verified via PayPal Sandbox</h1>
+            <p>Your cross-border payment has been captured and cryptographically recorded on the exporter's immutable ledger.</p>
+            <div class="badge">Order ID: ${orderId}</div>
+            <div>
+              <a href="/?payment_success=true&order_id=${orderId}">Return to VernacPay Dashboard</a>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (err: any) {
+    console.error('[PayPal Return Error]:', err);
+    res.status(500).send('Error processing payment capture: ' + err.message);
+  }
+});
+
+// 15. Real-Time Order Polling Fallback (For instant UI updates while webhook travels)
+app.get('/api/paypal/order-status/:orderId', async (req: Request, res: Response) => {
+  try {
+    const orderId = String(req.params.orderId);
+    const txs = await db.listTransactions();
+    const tx = txs.find(t => t.paypal_order_id === orderId || t.id === orderId);
+
+    if (tx && tx.status === 'VERIFIED_PAID') {
+      return res.json({ status: 'VERIFIED_PAID', transaction: tx });
+    }
+
+    // Check with live PayPal
+    const liveOrder = await paypalService.getOrder(orderId);
+    if (liveOrder && (liveOrder.status === 'COMPLETED' || liveOrder.status === 'APPROVED')) {
+      const updatedTx = await orchestrator.processVerifiedPaymentCapture({
+        orderId,
+        captureId: liveOrder.purchase_units?.[0]?.payments?.captures?.[0]?.id || `CAP_${orderId}`,
+      });
+      return res.json({ status: 'VERIFIED_PAID', transaction: updatedTx });
+    }
+
+    res.json({ status: tx?.status || 'AWAITING_BUYER', liveStatus: liveOrder?.status });
+  } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });

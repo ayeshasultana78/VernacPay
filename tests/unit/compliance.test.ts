@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import fs from 'fs';
 import path from 'path';
-import { orchestrator } from '../src/server/agent/orchestrator.js';
-import { db } from '../src/server/db/db.js';
-import { seedDatabase } from '../src/server/db/seed.js';
-import { fxService } from '../src/server/services/fxService.js';
-import { paypalService } from '../src/server/services/paypalService.js';
+import { orchestrator } from '../../src/server/agent/orchestrator.js';
+import { db } from '../../src/server/db/db.js';
+import { seedDatabase } from '../../src/server/db/seed.js';
+import { fxService } from '../../src/server/services/fxService.js';
+import { paypalService } from '../../src/server/services/paypalService.js';
 
 describe('PayPal AI Hackathon 2026: Official Requirements Compliance Suite', () => {
   beforeEach(async () => {
@@ -94,7 +94,7 @@ describe('PayPal AI Hackathon 2026: Official Requirements Compliance Suite', () 
 
   // --- Hackathon Requirement 3: Mandatory Open Source Compliance ---
   it('strictly satisfies Open-Source Compliance (MIT License, .env.example, render.yaml)', () => {
-    const rootDir = path.resolve(__dirname, '..');
+    const rootDir = path.resolve(__dirname, '../..');
     
     // 1. Root LICENSE file exists and is MIT
     const licensePath = path.join(rootDir, 'LICENSE');
@@ -119,7 +119,7 @@ describe('PayPal AI Hackathon 2026: Official Requirements Compliance Suite', () 
 
   // --- Hackathon Requirement 4: AG Grid Community Only (Zero Watermarks) ---
   it('guarantees zero unlicensed AG Grid Enterprise imports across codebase', () => {
-    const clientDir = path.resolve(__dirname, '../src/client');
+    const clientDir = path.resolve(__dirname, '../../src/client');
     const files = fs.readdirSync(clientDir, { recursive: true }) as string[];
     
     for (const f of files) {

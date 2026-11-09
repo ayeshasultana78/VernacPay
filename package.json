@@ -12,7 +12,10 @@
     "build:server": "tsc -p tsconfig.server.json",
     "build": "npm run build:client && npm run build:server",
     "start": "node dist/server/index.js",
-    "test": "vitest run",
+    "test": "vitest run tests/unit",
+    "test:unit": "vitest run tests/unit",
+    "test:live": "vitest run tests/live",
+    "test:all": "vitest run",
     "test:watch": "vitest",
     "db:seed": "tsx src/server/db/seed.ts"
   },

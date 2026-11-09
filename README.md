@@ -13,11 +13,11 @@ Over **15 million vernacular micro-exporters, artisans, handloom weavers, and in
 
 While they naturally conduct business via voice in **Telugu, Hindi, Urdu, or code-mixed English**, cross-border trade requires navigating complex English-only dashboards to generate international invoices, convert domestic Indian Rupees (INR) to USD/EUR/GBP, attach international carrier tracking numbers to release payment reserves, and reconcile foreign exchange ledgers.
 
-**VernacPay-Global** solves this by uniting **Sarvam AI Indic Speech Suite** (`Saaras` STT & `Bulbul` TTS) with **Anthropic Claude** and the **PayPal Developer Platform** (Orders v2, Invoicing v2 + QR, Shipment Tracking v1). A Hyderabad weaver can speak naturally in Telugu:
-> *"న్యూయార్క్ లో ఉన్న సారా కి పోచంపల్లి పట్టు చీర కోసం 12,000 రూపాయల పేపాల్ ఇన్వాయిస్ పంపండి"* 
-> *(Send a PayPal invoice to Sarah in New York for 12,000 rupees for a Pochampally silk saree)*
+**VernacPay-Global** solves this by uniting **Sarvam AI Indic Speech Suite** (`Saaras:v3` STT & `Bulbul:v3` TTS) with **Groq Function Calling** (`openai/gpt-oss-120b`, with optional Anthropic Claude adapter) and the **PayPal Developer Platform** (Orders v2 with instant scannable checkout QR and return URL capture). A Hyderabad weaver can speak naturally in Telugu:
+> *"న్యూయార్క్ లో ఉన్న సారా కి పోచంపల్లి పట్టు చీర కోసం 12,000 రూపాయల పేపాల్ ఆర్డర్ పంపండి"* 
+> *(Send a PayPal order to Sarah in New York for 12,000 rupees for a Pochampally silk saree)*
 
-VernacPay-Global deterministically locks an illustrative USD quote ($142.86 USD @ 1 USD = ₹84.00 INR), validates the schema via **Zod**, and presents a bilingual confirmation card. Only after explicit merchant authorization does the system invoke PayPal Sandbox APIs to create a real **PayPal Invoice & QR Code**, register **Shipment Tracking (DHL/FedEx)** to accelerate funds access, or send **Invoice Reminders** — with all verified settlements streamed in real time to an **AG Grid Community** command center.
+VernacPay-Global deterministically locks an illustrative USD quote ($142.86 USD @ 1 USD = ₹84.00 INR), validates the schema via **Zod**, and presents a bilingual confirmation card. Only after explicit merchant authorization does the system invoke PayPal Sandbox APIs to create a real **PayPal Sandbox Order & QR Code**, enabling the foreign buyer to scan and pay on PayPal Sandbox — with verified settlements committed to an **AG Grid Community** ledger.
 
 ---
 
@@ -29,15 +29,15 @@ VernacPay-Global deterministically locks an illustrative USD quote ($142.86 USD 
 +-----------------------------------------------------------------------------------------------------+
 
   [1. AI PROPOSES]  ──>  [2. SERVER VALIDATES]  ──>  [3. MERCHANT AUTHORIZES] ──> [4. PAYPAL PROCESSES] ──> [5. LEDGER VERIFIES]
-  (Untrusted Speech)     (Zod + Locked FX Quote)    (Explicit Voice OR 1-Tap)     (Orders v2 / Invoices)    (Signed Webhook Lock)
+  (Untrusted Speech)     (Zod + Locked FX Quote)    (Explicit Voice OR 1-Tap)     (Orders v2 + Live QR)     (Return Capture / Webhook)
 ```
 
 ### The 7 Unbreakable Engineering Rules:
 1. **AI Proposes. Server Validates. Merchant Authorizes. PayPal Processes. The Ledger Verifies.** The LLM is an untrusted natural language parser; it never transitions payment states directly.
-2. **Zero Secret Exposure:** `PAYPAL_CLIENT_SECRET`, `SARVAM_API_KEY`, and `ANTHROPIC_API_KEY` never touch the browser or LLM context.
-3. **No Unconfirmed Mutations:** All financial mutations (`stage_invoice_with_qr`, `stage_invoice_reminder`, `stage_shipment_tracking`) require a `staged_confirmations` record (10-minute TTL) and explicit merchant authorization before invoking PayPal.
-4. **Deterministic FX Math:** The LLM never calculates currency conversions. Spoken INR amounts are deterministically converted into USD using reference rates locked in PostgreSQL.
-5. **Cryptographic Capture & Webhooks:** Payment state moves to `VERIFIED_PAID` only after server-side PayPal capture verification and webhook signature validation (`PAYPAL-TRANSMISSION-SIG`) with unique idempotency constraints.
+2. **Zero Secret Exposure:** `PAYPAL_CLIENT_SECRET`, `SARVAM_API_KEY`, and `GROQ_API_KEY` never touch the browser or LLM context.
+3. **No Unconfirmed Mutations:** All financial mutations (`stage_invoice_with_qr`) require a `staged_confirmations` record (10-minute TTL) and explicit merchant authorization before invoking PayPal.
+4. **Deterministic FX Math:** The LLM never calculates currency conversions. Spoken INR amounts are deterministically converted into USD using reference rates locked on the server.
+5. **Cryptographic Capture & Fail-Closed Protection:** Payment state moves to `VERIFIED_PAID` only after verified PayPal capture. In live mode, unapproved captures strictly fail closed with real PayPal errors.
 6. **AG Grid Community Only:** Pure `ag-grid-community` and `ag-grid-react` implementation with zero unlicensed Enterprise trial watermarks.
 7. **Prompt-Injection Immunity:** Transcripts are strictly untrusted; adversarial attempts to bypass authorization or execute mutations are immediately rejected and logged.
 
@@ -91,7 +91,53 @@ To receive commercial PayPal cross-border export payments in India, merchants mu
 
 ---
 
-## 6. Local Setup & Quickstart
+## 6. What Existed Before October 1, 2026 and What Changed Since
+
+> In strict compliance with the **PayPal AI Hackathon 2026 Official Rules** regarding projects started or containing code prior to the hackathon window:
+
+* **What Existed Before October 1, 2026:**
+  * An early architectural exploration of voice commerce for domestic Indian street vendors using local INR payment mocks. It lacked international payment rails, had no cross-border FX quoting, lacked cryptographic webhook verification, had no live AI function calling, and used simple unverified HTML tables.
+* **Significant Updates Built After October 1, 2026 for the PayPal AI Hackathon:**
+  1. **Full Pivot to Global Cross-Border Export Commerce:** Shifted 100% of the platform architecture to Indian artisans, handloom weavers, and craft exporters billing international buyers in USD via the **PayPal Developer Platform**.
+  2. **Real PayPal Sandbox Integration (Orders v2 Rail):** Built live PayPal Sandbox authentication, dynamic order creation with live HATEOAS approval links, instant scannable QR generation (`QRCode.toDataURL`), and synchronous `/api/paypal/return` capture.
+  3. **Sarvam AI Indic Speech Suite (`saaras:v3` & `bulbul:v3`):** Upgraded from experimental drafts to live Sarvam v3 STT/TTS with natural speaker mapping for Telugu (`kavitha`), Hindi (`aditya`), and English (`simran`), with honest disclosure that Urdu audio is unsupported by Sarvam Bulbul.
+  4. **Groq LLM Function Calling Agent (`openai/gpt-oss-120b`):** Implemented high-speed agentic tool-calling with a strict 5-stage Trust Boundary (`AI Proposes -> Server Validates -> Merchant Authorizes -> PayPal Processes -> Ledger Verifies`).
+  5. **Deterministic FX Engine:** Hardened server-side FX calculation (1 USD = ₹84.00 INR reference) with 10-minute quote locks and zero LLM arithmetic hallucinations.
+  6. **AG Grid Community Financial Command Center:** Built an interactive, responsive ledger using pure `ag-grid-community` (zero unlicensed enterprise watermarks) with real-time SSE stream updates and voice-driven filtering.
+  7. **PostgreSQL Persistence & Fail-Closed Production Guards:** Integrated PostgreSQL with Knex migrations and connection pooling. App refuses to start in-memory when deployed to production.
+  8. **Judge Test Panel & Rate Limiting:** Built a dedicated 1-click test card with pre-configured PayPal Sandbox personal buyer credentials and 15 req/min per-IP rate limiting to safeguard provider quotas.
+
+---
+
+## 7. Verification Evidence: What is Real vs. What is Simulated
+
+| Capability | Status | Evidence / Verification Details |
+| :--- | :--- | :--- |
+| **PayPal Orders v2 Creation** | **LIVE REAL** | Real HTTP 201 calls to `https://api-m.sandbox.paypal.com/v2/checkout/orders` returning live `token` and HATEOAS approval links. |
+| **PayPal Buyer Checkout & QR** | **LIVE REAL** | Scannable Base64 QR code rendering the live PayPal Sandbox checkout URL; allows real sandbox buyer payment. |
+| **PayPal Payment Capture** | **LIVE REAL** | Synchronous capture via `/api/paypal/return` or webhook; returns real PayPal capture IDs (`6...` / `8...`). |
+| **Fail-Closed Capture Guard** | **LIVE REAL** | Attempting capture prior to buyer authorization returns real PayPal HTTP 422 `ORDER_NOT_APPROVED`. |
+| **Sarvam Indic Speech-to-Text** | **LIVE REAL** | Real `saaras:v3` speech recognition for Telugu, Hindi, and Indian English with Sarvam Translate API. |
+| **Sarvam Indic Text-to-Speech** | **LIVE REAL** | Real `bulbul:v3` audio synthesis for Telugu (`kavitha`), Hindi (`aditya`), and English (`simran`). |
+| **Urdu Audio Support** | **HONESTLY UNSUPPORTED** | Transparently labeled Text-Only intent. Sarvam Bulbul does not support Urdu audio. |
+| **Agentic LLM Function Calling** | **LIVE REAL** | Groq `openai/gpt-oss-120b` (with optional Anthropic Claude adapter) generating Zod-compliant tool calls. |
+| **Prompt Injection Defense** | **LIVE REAL** | Adversarial attacks (bypass auth, override ledger) are intercepted and rejected at Gate 1. |
+| **Database Persistence** | **LIVE REAL** | Authoritative PostgreSQL engine on Render (`vernacpay-db`); all rows survive service restarts. |
+| **AG Grid Integration** | **LIVE REAL** | Pure AG Grid Community v32; sortable, filterable, CSV exportable with zero watermarks. |
+| **Invoicing v2 Rail** | **DEPRECATED** | Returned 403 Forbidden on standard PayPal Sandbox apps; cleanly removed in favor of Orders v2 primary rail. |
+
+---
+
+## 8. Hackathon Judge & Reviewer Test Credentials
+
+To test the complete end-to-end checkout flow as an international buyer:
+* **PayPal Sandbox Personal Buyer Email:** `sb-gf0ug53749798@personal.example.com`
+* **PayPal Sandbox Personal Buyer Password:** `1fST*@il`
+* **Live App URL:** *(Deployed on Render)*
+
+---
+
+## 9. Local Setup & Quickstart
 
 ### Prerequisites
 * Node.js 20+
@@ -136,30 +182,26 @@ Open **`http://localhost:5173`** (or `http://localhost:3000`) in your browser.
 
 ---
 
-## 7. The 3-Minute Live Hackathon Demo Walkthrough
+## 10. The 3-Minute Live Hackathon Demo Walkthrough
 
-1. **Act 1: Multilingual Voice → Illustrative FX → Live PayPal QR Code (0:00 - 1:15)**
-   * Click **`🎤 [Telugu] Invoice Sarah ₹12,000 (Pochampally Saree)`** (or speak in Telugu).
+1. **Act 1: Multilingual Voice → Illustrative FX → Real PayPal Orders v2 QR Code (0:00 - 1:15)**
+   * Click **`🎤 [Telugu] Order for Sarah ₹12,000 (Pochampally Saree)`** (or speak naturally in Telugu).
    * Notice the instant bilingual subtitle (`న్యూయార్క్ లో ఉన్న సారా కి...` + English translation).
-   * Notice the Trust Boundary Bar advances: `1. AI Proposes` → `2. Server Validates`.
+   * Notice the Trust Boundary Bar advances: `1. AI Proposes` → `2. Server Validates` ($142.86 USD locked quote).
    * Click **`[Approve & Send via PayPal Sandbox]`**.
-   * The live **PayPal Invoicing QR code & Checkout modal** appears immediately with real Sandbox links.
-   * Click **`[Simulate Buyer Sandbox Capture]`** → Verified webhook fires via SSE, and the AG Grid row turns emerald `VERIFIED_PAID`!
+   * A real **PayPal Orders v2** transaction is created on PayPal Sandbox (`token=...`), and the scannable **PayPal Checkout QR Code** appears with direct sandbox checkout link.
+   * Reviewer or buyer opens the link or scans the QR, signs in with `sb-gf0ug53749798@personal.example.com`, and clicks **Complete Purchase**.
+   * PayPal redirects to `/api/paypal/return` where synchronous capture is executed, flipping the AG Grid row to **`VERIFIED_PAID`** with spoken confirmation!
 
-2. **Act 2: Post-Payment Fulfillment — Shipment Tracking (1:15 - 2:00)**
-   * Click **`🎤 [Hindi] Add DHL tracking to Emma's paid order`**.
-   * Notice the prompt clarifies that tracking supports PayPal Seller Protection.
-   * Confirm the staged action → AG Grid updates Emma's row to `SHIPPED: DHL #9845123650`.
-
-3. **Act 3: Voice-Controlled AG Grid & CSV Tax Export (2:00 - 2:45)**
-   * Click **`🎤 [English] Filter grid to unpaid & remind David`**.
-   * AG Grid filters itself via SSE `gridApi.setFilterModel()` to show only David's overdue invoice.
-   * Click **`[Export Ledger CSV]`** to trigger instant client-side CSV download via AG Grid API.
+2. **Act 2: Voice-Controlled AG Grid & CSV Tax Export (1:15 - 2:00)**
+   * Click **`🎤 [Telugu] Check verified ledger earnings`**.
+   * The agent speaks the verified totals in Telugu and displays the bilingual breakdown.
+   * Click **`[Export Ledger CSV]`** to trigger instant client-side CSV download via AG Grid Community API.
    * Expand the **Trust & Cryptographic Verification Drawer** at the bottom to showcase the complete tamper-evident audit trail!
 
 ---
 
-## 8. Deployment on Render
+## 11. Deployment on Render
 
 This project includes a declarative `render.yaml` Blueprint qualifying for the **Best Use of Render ($1,000 Credits)** prize track.
 
@@ -171,6 +213,6 @@ This project includes a declarative `render.yaml` Blueprint qualifying for the *
 
 ---
 
-## 9. License
+## 12. License
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details. Visible in GitHub's top-level About section in compliance with Official Hackathon Rules.

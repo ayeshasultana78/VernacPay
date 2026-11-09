@@ -41,7 +41,11 @@ services:
       - key: SARVAM_STT_MODEL
         value: saaras:v1
       - key: SARVAM_TTS_MODEL
-        value: bulbul:v1
+        value: bulbul:v3
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
 
 databases:
   # 2. Managed Authoritative PostgreSQL Database

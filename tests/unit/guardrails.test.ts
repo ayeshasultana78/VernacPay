@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { orchestrator } from '../src/server/agent/orchestrator.js';
-import { db } from '../src/server/db/db.js';
-import { seedDatabase } from '../src/server/db/seed.js';
-import { fxService } from '../src/server/services/fxService.js';
-import { StageInvoiceWithQrSchema } from '../src/server/agent/tools.js';
+import { orchestrator } from '../../src/server/agent/orchestrator.js';
+import { db } from '../../src/server/db/db.js';
+import { seedDatabase } from '../../src/server/db/seed.js';
+import { fxService } from '../../src/server/services/fxService.js';
+import { StageInvoiceWithQrSchema } from '../../src/server/agent/tools.js';
 
 describe('VernacPay-Global: Architectural Guardrails & Trust Boundary Tests', () => {
   beforeEach(async () => {

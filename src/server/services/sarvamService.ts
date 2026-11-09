@@ -17,26 +17,40 @@ export const DEMO_PRESETS: Record<string, {
   language: LanguageCode;
   intentHint: string;
 }> = {
-  telugu_invoice_sarah: {
-    label: '🎤 [Telugu] Invoice Sarah ₹12,000 for Pochampally Silk Saree',
-    native: 'న్యూయార్క్ లో ఉన్న సారా కి పోచంపల్లి పట్టు చీర కోసం 12,000 రూపాయల పేపాల్ ఇన్వాయిస్ పంపండి',
-    english: 'Send a PayPal invoice to Sarah in New York for 12,000 rupees for a Pochampally silk saree',
+  telugu_order_sarah: {
+    label: '🎤 [Telugu] Order for Sarah: ₹12,000 Pochampally Silk Saree',
+    native: 'న్యూయార్క్ లో ఉన్న సారా కి పోచంపల్లి పట్టు చీర కోసం 12,000 రూపాయల పేపాల్ ఆర్డర్ పంపండి',
+    english: 'Create a PayPal order for Sarah in New York for 12,000 rupees for a Pochampally silk saree',
     language: 'te-IN',
     intentHint: 'stage_invoice_with_qr',
   },
-  hindi_tracking_emma: {
-    label: "🎤 [Hindi] Add DHL tracking to Emma's paid order",
-    native: 'Emma ke paid order mein DHL tracking number 9845123650 add karo, shipment dispatch ho gaya hai',
-    english: 'Add DHL tracking number 9845123650 to Emma\'s paid order, shipment has dispatched',
-    language: 'hi-IN',
-    intentHint: 'stage_shipment_tracking',
+  telugu_invoice_sarah: {
+    label: '🎤 [Telugu] Order for Sarah: ₹12,000 Pochampally Silk Saree',
+    native: 'న్యూయార్క్ లో ఉన్న సారా కి పోచంపల్లి పట్టు చీర కోసం 12,000 రూపాయల పేపాల్ ఆర్డర్ పంపండి',
+    english: 'Create a PayPal order for Sarah in New York for 12,000 rupees for a Pochampally silk saree',
+    language: 'te-IN',
+    intentHint: 'stage_invoice_with_qr',
   },
-  english_unpaid_remind: {
-    label: '🎤 [English] Filter grid to unpaid invoices & remind David',
-    native: 'Filter the grid to unpaid invoices and send a PayPal reminder to David for his pending invoice',
-    english: 'Filter the grid to unpaid invoices and send a PayPal reminder to David for his pending invoice',
+  hindi_order_rahul: {
+    label: '🎤 [Hindi] Order for Rahul: ₹4,200 Brass Artware',
+    native: 'राहुल के लिए पीतल के बर्तन के लिए 4,200 रुपये का पेपाल ऑर्डर बनाएं',
+    english: 'Create a PayPal order for Rahul for 4,200 rupees for brass artware',
+    language: 'hi-IN',
+    intentHint: 'stage_invoice_with_qr',
+  },
+  english_order_emily: {
+    label: '🎤 [English] Order for Emily: ₹8,400 Handcrafted Woodwork',
+    native: 'Create a PayPal order for Emily in Chicago for 8,400 rupees for handcrafted woodwork',
+    english: 'Create a PayPal order for Emily in Chicago for 8,400 rupees for handcrafted woodwork',
     language: 'en-IN',
-    intentHint: 'filter_and_remind',
+    intentHint: 'stage_invoice_with_qr',
+  },
+  urdu_order_zainab: {
+    label: '📝 [Urdu - Text only] Order for Zainab: ₹15,000 Handwoven Rug',
+    native: 'زینب کے لیے ہاتھ سے بنی قالین کے لیے 15,000 روپے کا پے پال آرڈر بنائیں',
+    english: 'Create a PayPal order for Zainab for 15,000 rupees for a handwoven rug',
+    language: 'ur-IN',
+    intentHint: 'stage_invoice_with_qr',
   },
   telugu_summary: {
     label: '🎤 [Telugu] Check verified ledger earnings',
@@ -54,8 +68,8 @@ export class SarvamService {
 
   constructor() {
     this.apiKey = process.env.SARVAM_API_KEY || 'mock-sarvam-key';
-    this.sttModel = process.env.SARVAM_STT_MODEL || 'saaras:v1';
-    this.ttsModel = process.env.SARVAM_TTS_MODEL || 'bulbul:v1';
+    this.sttModel = process.env.SARVAM_STT_MODEL || 'saaras:v3';
+    this.ttsModel = process.env.SARVAM_TTS_MODEL || 'bulbul:v3';
   }
 
   private isMock(): boolean {
@@ -162,11 +176,21 @@ export class SarvamService {
     text: string;
     languageCode: LanguageCode;
   }): Promise<SarvamTtsResult> {
-    let targetLang = params.languageCode;
-    let voice = 'sarita';
-    if (targetLang === 'te-IN') voice = 'sarita';
-    else if (targetLang === 'hi-IN' || targetLang === 'ur-IN') voice = 'meera';
-    else voice = 'arvind';
+    const targetLang = params.languageCode;
+
+    // Honest Provider Check: Sarvam Bulbul does not currently support Urdu (ur-IN)
+    if (targetLang === 'ur-IN') {
+      return {
+        audio_base64: '',
+        language_code: params.languageCode,
+        format: 'wav',
+      };
+    }
+
+    let voice = 'simran';
+    if (targetLang === 'te-IN') voice = 'kavitha';
+    else if (targetLang === 'hi-IN') voice = 'aditya';
+    else voice = 'simran';
 
     if (!this.isMock()) {
       try {
@@ -178,13 +202,8 @@ export class SarvamService {
           },
           body: JSON.stringify({
             inputs: [params.text],
-            target_language_code: targetLang === 'ur-IN' ? 'hi-IN' : targetLang,
+            target_language_code: targetLang,
             speaker: voice,
-            pitch: 0,
-            pace: 1.05,
-            loudness: 1.5,
-            speech_sample_rate: 22050,
-            enable_preprocessing: true,
             model: this.ttsModel,
           }),
         });

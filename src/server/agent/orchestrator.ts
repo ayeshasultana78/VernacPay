@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import crypto from 'crypto';
+import QRCode from 'qrcode';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db/db.js';
 import { fxService } from '../services/fxService.js';
@@ -266,6 +267,55 @@ Rules:
         }
       } catch (err: any) {
         console.warn('[Claude Orchestrator] Using deterministic semantic parser:', err.message);
+      }
+    } else if (process.env.GROQ_API_KEY && !process.env.GROQ_API_KEY.startsWith('mock-')) {
+      try {
+        const groqTools = TOOL_DEFINITIONS.map((t) => ({
+          type: 'function',
+          function: {
+            name: t.name,
+            description: t.description,
+            parameters: t.parameters,
+          },
+        }));
+
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: process.env.GROQ_MODEL || 'openai/gpt-oss-120b',
+            messages: [
+              {
+                role: 'system',
+                content: `You are VernacPay-Global AI for Lakshmi Handlooms & Crafts (Hyderabad).
+Rules:
+1. Extract spoken rupee pricing into spoken_amount_inr.
+2. Disambiguate quantity vs. amount ("2 sarees for 12,000 rupees" -> quantity: 2, spoken_amount_inr: 12000).
+3. NEVER create unconfirmed PayPal mutations or mark items as paid.
+4. Only propose designated tools.`,
+              },
+              { role: 'user', content: transcript_english },
+            ],
+            tools: groqTools,
+            tool_choice: 'auto',
+          }),
+        });
+
+        if (res.ok) {
+          const data = (await res.json()) as any;
+          const tc = data.choices?.[0]?.message?.tool_calls?.[0];
+          if (tc && tc.function) {
+            toolSelection = {
+              toolName: tc.function.name,
+              args: typeof tc.function.arguments === 'string' ? JSON.parse(tc.function.arguments) : tc.function.arguments,
+            };
+          }
+        }
+      } catch (err: any) {
+        console.warn('[Groq Orchestrator] Error:', err.message);
       }
     }
 
@@ -655,31 +705,31 @@ Rules:
     let qrCodeBase64: string | undefined;
     let approvalUrl: string | undefined;
 
-    // Step 4: PayPal API Executed
+    // Step 4: PayPal API Executed (Orders v2 as Primary Verified Cross-Border Rail)
     if (staged.tool_name === 'stage_invoice_with_qr') {
-      const inv = await paypalService.createDraftInvoice({
+      const order = await paypalService.createOrder({
         customerName: staged.customer_name || 'Customer',
-        customerEmail: staged.customer_email || 'customer@sandbox.paypal.com',
+        customerEmail: staged.customer_email || 'sb-gf0ug53749798@personal.example.com',
         itemName: staged.item_name || 'Handcrafted Export Product',
-        quantity: staged.payload.quantity || 1,
+        quantity: staged.payload?.quantity || 1,
         amountUsd: staged.settlement_amount_usd || 100,
       });
 
-      await paypalService.sendInvoice(inv.id);
-      qrCodeBase64 = inv.qr_code_base64 || await paypalService.generateInvoiceQrCode(inv.id);
-      approvalUrl = inv.invoice_url;
+      const orderOrInvId = order.id;
+      approvalUrl = order.approval_url || `https://www.sandbox.paypal.com/checkoutnow?token=${order.id}`;
+      qrCodeBase64 = await QRCode.toDataURL(approvalUrl);
 
       createdTx = {
         id: `tx_${uuidv4().replace(/-/g, '').slice(0, 16)}`,
         merchant_id: staged.merchant_id,
-        paypal_invoice_id: inv.id,
+        paypal_order_id: orderOrInvId,
         customer_name: staged.customer_name || 'Customer',
         customer_country: 'United States',
         item_name: staged.item_name || 'Export Item',
         spoken_amount_inr: staged.spoken_amount_inr || 0,
         settlement_amount_usd: staged.settlement_amount_usd || 0,
         settlement_currency: 'USD',
-        paypal_rail: 'INVOICE',
+        paypal_rail: 'ORDER',
         qr_code_base64: qrCodeBase64,
         approval_url: approvalUrl,
         shipment_status: 'NOT_SHIPPED',
@@ -693,9 +743,9 @@ Rules:
 
       await auditService.recordStage({
         stage: '4. PAYPAL API EXECUTED',
-        actionName: 'create_and_send_invoice',
+        actionName: 'create_order_with_qr',
         status: 'SUCCESS',
-        details: `PayPal Invoice sent: ${inv.id}. QR code generated and live on screen.`,
+        details: `PayPal Order created: ${orderOrInvId}. Scannable checkout QR generated for buyer.`,
       });
     } else if (staged.tool_name === 'stage_shipment_tracking') {
       const txs = await db.listTransactions(staged.merchant_id);
@@ -763,7 +813,8 @@ Rules:
       (params.captureId && t.paypal_capture_id === params.captureId)
     );
 
-    if (!target) {
+    if (!target && (!params.orderId && !params.invoiceId && !params.captureId)) {
+      // In explicit simulator testing without parameters, target latest AWAITING_BUYER
       target = txs.find(t => t.status === 'AWAITING_BUYER');
     }
 
