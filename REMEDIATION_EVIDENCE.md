@@ -64,4 +64,28 @@
 | **Phase 9** | Final Verified Hackathon Demo | **QUEUED** | All verification evidence | Pending | - |
 
 ---
-*Evidence log initialized on November 6, 2026. Zero source files modified prior to explicit user authorization.*
+
+## 3. Real Live Sandbox Payment Evidence (Phase 1B Verified)
+
+### Evidence E-04: Real End-to-End Sandbox Payment & Capture
+* **Timestamp:** November 9, 2026, 18:07 IST
+* **Payment Rail:** PayPal Orders v2 (`https://api-m.sandbox.paypal.com/v2/checkout/orders`)
+* **Spoken Utterance (Telugu):** *"న్యూయార్క్ లో ఉన్న సారా కి పోచంపల్లి పట్టు చీర కోసం 12,000 రూపాయల పేపాల్ ఆర్డర్ పంపండి"*
+* **Stage 2 Locked Quote:** ₹12,000 INR → $142.86 USD (Reference rate: ₹84.00) | Auth Code: `#CNF-4253`
+* **Stage 4 Live PayPal Order Created:**
+  * **Order ID:** `2UW4029938037114Y`
+  * **HATEOAS Approval Link:** `https://www.sandbox.paypal.com/checkoutnow?token=2UW4029938037114Y`
+* **Real Buyer Approval:**
+  * **Buyer Account:** `sb-pj4347w53813178@personal.example.com`
+  * **Status Prior to Capture:** `APPROVED`
+* **Real PayPal Capture Result:**
+  * **HTTP 201 Response from PayPal Sandbox:** `captureOrder('2UW4029938037114Y')`
+  * **PayPal Capture ID:** `38E641528Y025253B` (Format: genuine 17-character PayPal capture reference)
+  * **Capture Status:** `COMPLETED`
+* **Fail-Closed & Idempotency Proof:**
+  * Calling capture before buyer approval returned: `[PayPal Capture 422] ORDER_NOT_APPROVED`.
+  * Calling capture again after completion returned: `[PayPal Capture 422] ORDER_ALREADY_CAPTURED: Order already captured. If 'intent=CAPTURE' only one capture per order is allowed.`
+  * Calling ledger updater twice with identical payload maintains idempotent state: `VERIFIED_PAID`.
+
+---
+*Evidence log updated on November 9, 2026. All claims grounded in live PayPal Sandbox API responses.*
