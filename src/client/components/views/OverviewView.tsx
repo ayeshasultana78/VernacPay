@@ -35,8 +35,8 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
   const { setActiveView, backendConfig } = useAppStore();
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
-  const buyerEmail = backendConfig?.sandboxBuyer?.email || 'sb-gf0ug53749798@personal.example.com';
-  const buyerPassword = backendConfig?.sandboxBuyer?.password || '1fST*@il';
+  const buyerEmail = backendConfig?.sandboxBuyer?.email || 'sb-pj4347w53813178@personal.example.com';
+  const buyerPassword = backendConfig?.sandboxBuyer?.password || '5f87)Xy8';
 
   const copyToClipboard = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);

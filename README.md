@@ -131,8 +131,8 @@ To receive commercial PayPal cross-border export payments in India, merchants mu
 ## 8. Hackathon Judge & Reviewer Test Credentials
 
 To test the complete end-to-end checkout flow as an international buyer:
-* **PayPal Sandbox Personal Buyer Email:** `sb-gf0ug53749798@personal.example.com`
-* **PayPal Sandbox Personal Buyer Password:** `1fST*@il`
+* **PayPal Sandbox Personal Buyer Email:** `sb-pj4347w53813178@personal.example.com`
+* **PayPal Sandbox Personal Buyer Password:** `5f87)Xy8`
 * **Live App URL:** *(Deployed on Render)*
 
 ---
@@ -190,7 +190,7 @@ Open **`http://localhost:5173`** (or `http://localhost:3000`) in your browser.
    * Notice the Trust Boundary Bar advances: `1. AI Proposes` → `2. Server Validates` ($142.86 USD locked quote).
    * Click **`[Approve & Send via PayPal Sandbox]`**.
    * A real **PayPal Orders v2** transaction is created on PayPal Sandbox (`token=...`), and the scannable **PayPal Checkout QR Code** appears with direct sandbox checkout link.
-   * Reviewer or buyer opens the link or scans the QR, signs in with `sb-gf0ug53749798@personal.example.com`, and clicks **Complete Purchase**.
+   * Reviewer or buyer opens the link or scans the QR, signs in with `sb-pj4347w53813178@personal.example.com`, and clicks **Complete Purchase**.
    * PayPal redirects to `/api/paypal/return` where synchronous capture is executed, flipping the AG Grid row to **`VERIFIED_PAID`** with spoken confirmation!
 
 2. **Act 2: Voice-Controlled AG Grid & CSV Tax Export (1:15 - 2:00)**

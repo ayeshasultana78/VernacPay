@@ -709,7 +709,7 @@ Rules:
     if (staged.tool_name === 'stage_invoice_with_qr') {
       const order = await paypalService.createOrder({
         customerName: staged.customer_name || 'Customer',
-        customerEmail: staged.customer_email || 'sb-gf0ug53749798@personal.example.com',
+        customerEmail: staged.customer_email || process.env.PAYPAL_SANDBOX_BUYER_EMAIL || 'sb-pj4347w53813178@personal.example.com',
         itemName: staged.item_name || 'Handcrafted Export Product',
         quantity: staged.payload?.quantity || 1,
         amountUsd: staged.settlement_amount_usd || 100,

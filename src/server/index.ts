@@ -39,8 +39,8 @@ app.get('/api/health', (req: Request, res: Response) => {
     database_engine: db.isPostgres ? 'POSTGRESQL' : 'IN_MEMORY_PERSISTENT',
     fx_rate: fxService.getCurrentRate('INR', 'USD'),
     sandbox_buyer: {
-      email: process.env.PAYPAL_SANDBOX_BUYER_EMAIL || 'sb-gf0ug53749798@personal.example.com',
-      password: process.env.PAYPAL_SANDBOX_BUYER_PASSWORD || '1fST*@il',
+      email: process.env.PAYPAL_SANDBOX_BUYER_EMAIL || 'sb-pj4347w53813178@personal.example.com',
+      password: process.env.PAYPAL_SANDBOX_BUYER_PASSWORD || '5f87)Xy8',
     },
     timestamp: new Date().toISOString(),
   });
