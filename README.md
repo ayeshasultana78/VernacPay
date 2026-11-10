@@ -48,7 +48,7 @@ VernacPay-Global deterministically locks an illustrative USD quote ($142.86 USD 
 | Dimension | 1. Previous (Status Quo) | 2. Initial Concept (v1 Draft) | 3. NOW (VernacPay-Global v2 Winner Build) | 4. After (Post-Hackathon Scale) |
 | :--- | :--- | :--- | :--- | :--- |
 | **Target User & Market Fit** | Artisans depend on export middlemen losing 30–50% margin. | Targeted domestic Indian tea stalls (mismatch since PayPal doesn't process domestic INR UPI). | **Vernacular Cross-Border Artisans, Weavers & Global Tutors** billing US/UK buyers in USD via PayPal. 100% authentic PayPal fit. | Multi-corridor exporter platform with WhatsApp voice integration. |
-| **PayPal Breadth** | Manual payment links; unlogged shipping causes held funds. | Raw Orders v2 endpoint only. | **Invoicing v2 with scannable QR, Orders v2 checkout, Shipment Tracking v1, and Invoice Reminders.** | PayPal Payouts for local craft cooperatives + PayPal Pay Later. |
+| **PayPal Breadth** | Manual payment links; unlogged shipping causes held funds. | Raw Orders v2 endpoint only. | **Orders v2 with Dynamic QR & Synchronous Return Capture (Proven Live on Sandbox).** *Invoicing v2 & Tracking v1 staged as roadmap architecture.* | PayPal Payouts for local craft cooperatives + PayPal Pay Later. |
 | **Currency & FX Handling** | Manual calculations; quoting wrong currencies. | Treated USD as an awkward demo limitation. | **Dual-Currency FX Engine:** Spoken INR converted into transparent illustrative USD quotes ($142.86 USD @ 84.00) with locked TTL. | Automated treasury hedging & forward FX alerts. |
 | **Post-Payment Lifecycle** | Untracked packages; payments frozen on hold. | Stopped after checkout link creation. | **Post-Payment Fulfillment:** Voice-driven DHL/FedEx tracking release (`create_shipment_tracking`) and overdue invoice reminders (`send_invoice_reminder`). | Automated India Post / DHL courier webhook sync. |
 | **Merchant Interface** | Handwritten paper notebooks (*Bahi-Khata*). | Basic plain HTML table. | **Bilingual Voice + Touch PWA** with **AG Grid Community Command Center**, live SSE Trust Boundary Inspector, and CSV export. | Offline-first mobile app + voice note bot. |
@@ -113,27 +113,27 @@ To receive commercial PayPal cross-border export payments in India, merchants mu
 
 | Capability | Status | Evidence / Verification Details |
 | :--- | :--- | :--- |
-| **PayPal Orders v2 Creation** | **LIVE REAL** | Real HTTP 201 calls to `https://api-m.sandbox.paypal.com/v2/checkout/orders` returning live `token` and HATEOAS approval links. |
-| **PayPal Buyer Checkout & QR** | **LIVE REAL** | Scannable Base64 QR code rendering the live PayPal Sandbox checkout URL; allows real sandbox buyer payment. |
-| **PayPal Payment Capture** | **LIVE REAL** | Synchronous capture via `/api/paypal/return` or webhook; returns real PayPal capture IDs (`6...` / `8...`). |
+| **PayPal Orders v2 Creation** | **LIVE REAL** | Real HTTP 201 calls to `https://api-m.sandbox.paypal.com/v2/checkout/orders` returning live `token` and HATEOAS approval links. Live deployment Order: `62D41517T2589423P`. |
+| **PayPal Buyer Checkout & QR** | **LIVE REAL** | Scannable Base64 QR code rendering the live PayPal Sandbox checkout URL; allows real sandbox buyer payment. Tested live on mobile and desktop. |
+| **PayPal Payment Capture** | **LIVE REAL** | Synchronous capture via `/api/paypal/return` with real PayPal capture reference `0ER40279291956133` recorded on live PostgreSQL ledger (`ledg_a7939e74053f41fa`). |
 | **Fail-Closed Capture Guard** | **LIVE REAL** | Attempting capture prior to buyer authorization returns real PayPal HTTP 422 `ORDER_NOT_APPROVED`. |
 | **Sarvam Indic Speech-to-Text** | **LIVE REAL** | Real `saaras:v3` speech recognition for Telugu, Hindi, and Indian English with Sarvam Translate API. |
 | **Sarvam Indic Text-to-Speech** | **LIVE REAL** | Real `bulbul:v3` audio synthesis for Telugu (`kavitha`), Hindi (`aditya`), and English (`simran`). |
-| **Urdu Audio Support** | **HONESTLY UNSUPPORTED** | Transparently labeled Text-Only intent. Sarvam Bulbul does not support Urdu audio. |
+| **Urdu Audio Support** | **HONESTLY UNSUPPORTED** | Transparently labeled Text-Only intent. Sarvam Bulbul does not support Urdu audio synthesis. |
 | **Agentic LLM Function Calling** | **LIVE REAL** | Groq `openai/gpt-oss-120b` (with optional Anthropic Claude adapter) generating Zod-compliant tool calls. |
 | **Prompt Injection Defense** | **LIVE REAL** | Adversarial attacks (bypass auth, override ledger) are intercepted and rejected at Gate 1. |
-| **Database Persistence** | **LIVE REAL** | Authoritative PostgreSQL engine on Render (`vernacpay-db`); all rows survive service restarts. |
+| **Database Persistence** | **LIVE REAL** | Authoritative Managed PostgreSQL engine on Render (`vernacpay-db`); all rows survive service restarts. |
 | **AG Grid Integration** | **LIVE REAL** | Pure AG Grid Community v32; sortable, filterable, CSV exportable with zero watermarks. |
-| **Invoicing v2 Rail** | **DEPRECATED** | Returned 403 Forbidden on standard PayPal Sandbox apps; cleanly removed in favor of Orders v2 primary rail. |
+| **Invoicing v2 / Tracking v1** | **PENDING / ROADMAP** | Staged in code architecture; Orders v2 selected as verified primary rail for universal sandbox reliability. |
 
 ---
 
 ## 8. Hackathon Judge & Reviewer Test Credentials
 
 To test the complete end-to-end checkout flow as an international buyer:
+* **Live App URL:** [https://vernacpay-global-app.onrender.com/](https://vernacpay-global-app.onrender.com/) *(Free instance: please allow ~30-45s for initial wake-up)*
 * **PayPal Sandbox Personal Buyer Email:** `sb-pj4347w53813178@personal.example.com`
 * **PayPal Sandbox Personal Buyer Password:** `[Placeholder: Set via PAYPAL_SANDBOX_BUYER_PASSWORD / Provided in Portal]`
-* **Live App URL:** *(Deployed on Render)*
 
 ---
 
@@ -145,8 +145,8 @@ To test the complete end-to-end checkout flow as an international buyer:
 
 ### Step 1: Clone & Install Dependencies
 ```bash
-git clone https://github.com/vernacpay/vernacpay-global.git
-cd vernacpay-global
+git clone https://github.com/ayeshasultana78/VernacPay.git
+cd VernacPay
 npm install
 ```
 
