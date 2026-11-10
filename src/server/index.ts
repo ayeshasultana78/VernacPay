@@ -449,9 +449,9 @@ app.get('/api/paypal/order-status/:orderId', async (req: Request, res: Response)
       return res.json({ status: 'VERIFIED_PAID', transaction: updatedTx });
     }
 
-    res.json({ status: tx?.status || 'AWAITING_BUYER', liveStatus: liveOrder?.status });
+    res.json({ status: tx?.status || 'AWAITING_BUYER', liveStatus: liveOrder?.status || 'UNKNOWN' });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(200).json({ status: 'AWAITING_BUYER', note: err.message });
   }
 });
 

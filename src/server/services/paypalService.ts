@@ -204,11 +204,17 @@ export class PayPalService {
     if (this.isMockCredentials()) {
       return { id: orderId, status: 'COMPLETED' };
     }
-    const token = await this.getAccessToken();
-    const res = await fetch(`${this.baseUrl}/v2/checkout/orders/${orderId}`, {
-      headers: { 'Authorization': `Bearer ${token}` },
-    });
-    return res.json();
+    try {
+      const token = await this.getAccessToken();
+      const res = await fetch(`${this.baseUrl}/v2/checkout/orders/${orderId}`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      const text = await res.text();
+      return text ? JSON.parse(text) : null;
+    } catch (err: any) {
+      console.warn('[PayPal getOrder] Error:', err.message);
+      return null;
+    }
   }
 
   async captureOrder(orderId: string, idempotencyKey?: string): Promise<{
