@@ -7,17 +7,31 @@
 
 ---
 
+## 0. Hackathon Submission Compliance & Judge Evaluation Matrix
+
+| Official Requirement | Implementation in VernacPay-Global | Evidence & Live Location |
+| :--- | :--- | :--- |
+| **1. Meaningfully integrate at least one PayPal technology** | Live **PayPal Orders v2 API** (`/v2/checkout/orders`), dynamic Base64 checkout QR generation, synchronous `/api/paypal/return` auto-capture, and cryptographic webhook verification (`verify-webhook-signature`). | Proven live on Render with real PayPal Order ID `62D41517T2589423P` and Capture ID `0ER40279291956133`. |
+| **2. Meaningfully incorporate AI into the experience** | Dual-AI Pipeline: **Sarvam AI Indic Speech Suite** (`saaras:v3` STT & `bulbul:v3` TTS) for Telugu, Hindi, and Indian English, paired with **Groq Function Calling** (`openai/gpt-oss-120b`, Anthropic Claude adapter) constrained by a strict 5-stage Trust Boundary. | The LLM only proposes structured actions; server validates via Zod and locks FX deterministically before merchant authorization. |
+| **3. Demonstrate a working prototype or proof of concept** | Live, functional production deployment with zero simulated fallbacks on the active path (`DEMO_MODE` unset). | Hosted live on Render: [https://vernacpay-global-app.onrender.com/](https://vernacpay-global-app.onrender.com/) with `/healthz` and `/api/health` monitoring. |
+| **4. Sufficient documentation for judges to evaluate** | End-to-end architecture diagrams, local setup commands, verification tables, regulatory disclosures, and pre-configured Sandbox test accounts. | Documented below in Sections 2, 7, 8, 9, and 10. |
+| **5. Public code repository & Open-Source License** | Public GitHub repository under the permissive **MIT License** visible at the root and in GitHub's About sidebar. | GitHub: [https://github.com/ayeshasultana78/VernacPay](https://github.com/ayeshasultana78/VernacPay) • License: [MIT LICENSE](LICENSE). |
+| **6. Demo video under 3 minutes** | 2-minute 45-second live walkthrough demonstrating real voice ingestion, PayPal QR generation, phone checkout, return capture, and AG Grid ledger updates. | Zero copyrighted background music, zero unauthorized brand logos, full English captions for vernacular speech. |
+| **7. Progress made after October 1, 2026** | Complete architectural pivot from domestic INR drafts to cross-border USD export commerce on PayPal Orders v2, Render PostgreSQL, AG Grid Community, and Sarvam v3. | Documented with exact dates and milestone changes in Section 6. |
+
+---
+
 ## 1. Abstract & Real-World Problem
 
-Over **15 million vernacular micro-exporters, artisans, handloom weavers, and independent tutors across India** possess world-class crafts and skills demanded by buyers in the United States, United Kingdom, and Europe. However, they remain excluded from direct global trade by a double friction: **language barriers** and **cross-border payment complexity**. 
+According to the official **Ministry of Textiles Handloom Census**, India is home to over **7 million traditional artisans, weavers, and craftspersons**. Their handcrafted Pochampally silks, Kalamkari textiles, and lost-wax brass crafts command high demand from buyers in the United States, United Kingdom, and Europe. However, they remain excluded from direct global trade by a double friction: **language barriers** and **cross-border payment complexity**. 
 
-While they naturally conduct business via voice in **Telugu, Hindi, Urdu, or code-mixed English**, cross-border trade requires navigating complex English-only dashboards to generate international invoices, convert domestic Indian Rupees (INR) to USD/EUR/GBP, attach international carrier tracking numbers to release payment reserves, and reconcile foreign exchange ledgers.
+While they naturally conduct business via voice in **Telugu, Hindi, or code-mixed English**, cross-border trade requires navigating complex English-only dashboards to generate international invoices, convert domestic Indian Rupees (INR) to foreign currency (USD), and reconcile foreign exchange ledgers.
 
-**VernacPay-Global** solves this by uniting **Sarvam AI Indic Speech Suite** (`Saaras:v3` STT & `Bulbul:v3` TTS) with **Groq Function Calling** (`openai/gpt-oss-120b`, with optional Anthropic Claude adapter) and the **PayPal Developer Platform** (Orders v2 with instant scannable checkout QR and return URL capture). A Hyderabad weaver can speak naturally in Telugu:
+**VernacPay-Global** solves this by uniting **Sarvam AI Indic Speech Suite** (`Saaras:v3` STT & `Bulbul:v3` TTS) with **Groq Function Calling** (`openai/gpt-oss-120b`) and the **PayPal Developer Platform** (Orders v2 with instant scannable checkout QR and return URL capture). A Hyderabad weaver can speak naturally in Telugu:
 > *"న్యూయార్క్ లో ఉన్న సారా కి పోచంపల్లి పట్టు చీర కోసం 12,000 రూపాయల పేపాల్ ఆర్డర్ పంపండి"* 
 > *(Send a PayPal order to Sarah in New York for 12,000 rupees for a Pochampally silk saree)*
 
-VernacPay-Global deterministically locks an illustrative USD quote ($142.86 USD @ 1 USD = ₹84.00 INR), validates the schema via **Zod**, and presents a bilingual confirmation card. Only after explicit merchant authorization does the system invoke PayPal Sandbox APIs to create a real **PayPal Sandbox Order & QR Code**, enabling the foreign buyer to scan and pay on PayPal Sandbox — with verified settlements committed to an **AG Grid Community** ledger.
+VernacPay-Global deterministically locks an illustrative USD quote ($142.86 USD @ 1 USD = ₹84.00 INR), validates the schema via **Zod**, and presents a bilingual confirmation card. Only after explicit merchant authorization does the system invoke PayPal Sandbox APIs to create a real **PayPal Sandbox Order & QR Code**, enabling the foreign buyer to scan and pay on PayPal Sandbox — with verified settlements committed to an **AG Grid Community** ledger backed by Managed PostgreSQL on Render.
 
 ---
 
