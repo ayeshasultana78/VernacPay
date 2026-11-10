@@ -12,6 +12,7 @@ import {
   LedgerEntry, 
   WebhookAndAuditEvent 
 } from '../../types/index.js';
+import { SCHEMA_SQL } from './schema.js';
 
 dotenv.config();
 
@@ -52,11 +53,25 @@ class DatabaseManager {
         const client = await this.pool.connect();
         try {
           const __dirname = path.dirname(fileURLToPath(import.meta.url));
-          const schemaPath = path.join(__dirname, 'schema.sql');
-          if (fs.existsSync(schemaPath)) {
-            const sql = fs.readFileSync(schemaPath, 'utf8');
-            await client.query(sql);
+          const schemaCandidates = [
+            path.join(__dirname, 'schema.sql'),
+            path.resolve(__dirname, '../../src/server/db/schema.sql'),
+            path.resolve(process.cwd(), 'src/server/db/schema.sql'),
+            path.resolve(process.cwd(), 'VernacPay/src/server/db/schema.sql')
+          ];
+          let sql: string = SCHEMA_SQL;
+          for (const sp of schemaCandidates) {
+            if (fs.existsSync(sp)) {
+              try {
+                sql = fs.readFileSync(sp, 'utf8');
+                break;
+              } catch {
+                // fallback to SCHEMA_SQL
+              }
+            }
           }
+          await client.query(sql);
+          await client.query('SELECT 1 FROM paypal_transactions LIMIT 1');
           this.isPostgres = true;
           console.log('[DB] PostgreSQL connected and schema verified.');
           return;
