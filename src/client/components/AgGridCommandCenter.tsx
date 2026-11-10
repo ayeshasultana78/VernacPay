@@ -20,7 +20,9 @@ import {
   ShieldCheck, 
   TrendingUp, 
   PackageCheck,
-  Search
+  Search,
+  Sparkles,
+  Globe2
 } from 'lucide-react';
 import { PayPalTransaction } from '../../types';
 
@@ -64,6 +66,21 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
 
   const onGridReady = (params: GridReadyEvent<PayPalTransaction>) => {
     gridApiRef.current = params.api;
+    try {
+      params.api.sizeColumnsToFit();
+    } catch {
+      // Ignore initial layout sizing
+    }
+  };
+
+  const onGridSizeChanged = (params: any) => {
+    try {
+      if (params.api) {
+        params.api.sizeColumnsToFit();
+      }
+    } catch {
+      // Gracefully handle dynamic resize
+    }
   };
 
   const handleQuickFilter = (type: 'ALL' | 'PAID' | 'UNPAID' | 'SHIPPED') => {
@@ -102,33 +119,173 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
     }
   };
 
-  // Custom Cell Renderers
+  // Helper for Corridor & Country Flags
+  const getCountryDetails = (countryStr?: string) => {
+    const c = countryStr || '';
+    if (c.includes('United States') || c.includes('US') || c.includes('New York') || c.includes('Chicago')) {
+      return { flag: '🇺🇸', code: 'US', corridor: 'US-East' };
+    }
+    if (c.includes('United Kingdom') || c.includes('UK') || c.includes('London')) {
+      return { flag: '🇬🇧', code: 'UK', corridor: 'Transatlantic' };
+    }
+    if (c.includes('Germany') || c.includes('Europe') || c.includes('EU')) {
+      return { flag: '🇪🇺', code: 'EU', corridor: 'Euro-Zone' };
+    }
+    return { flag: '🌐', code: 'INTL', corridor: 'Global' };
+  };
+
+  // Custom Cell Renderers with Visual Micro-Graphics & Pinned Row Support
+  const CustomerCellRenderer = (params: ICellRendererParams<PayPalTransaction>) => {
+    if (params.node?.isRowPinned()) {
+      return (
+        <div className="flex items-center gap-1.5 h-full">
+          <Globe2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="font-bold text-xs text-slate-200 uppercase tracking-wide">
+            {params.value}
+          </span>
+        </div>
+      );
+    }
+    const data = params.data;
+    if (!data) return null;
+    const { flag, code } = getCountryDetails(data.customer_country);
+    return (
+      <div className="flex items-center gap-2.5 h-full">
+        <span className="text-base select-none shrink-0" title={data.customer_country}>{flag}</span>
+        <div className="flex flex-col justify-center leading-tight overflow-hidden">
+          <span className="font-semibold text-xs text-[var(--text-primary)] truncate">
+            {data.customer_name}
+          </span>
+          <span className="text-[10px] text-[var(--text-tertiary)] flex items-center gap-1 font-mono">
+            <span>{code}</span>
+            <span className="text-[8px] px-1 py-0.2 rounded bg-slate-800 text-blue-300 border border-slate-700/60">
+              PAYPAL
+            </span>
+          </span>
+        </div>
+      </div>
+    );
+  };
+
+  const SpokenInrCellRenderer = (params: ICellRendererParams<PayPalTransaction>) => {
+    if (params.node?.isRowPinned()) {
+      return (
+        <div className="flex flex-col justify-center h-full leading-tight">
+          <span className="font-mono font-extrabold text-amber-300 text-xs tabular-nums">
+            ₹{Number(params.value || 0).toLocaleString('en-IN')}
+          </span>
+          <span className="text-[9px] text-amber-500/90 uppercase font-mono tracking-wider">
+            Total Spoken
+          </span>
+        </div>
+      );
+    }
+    const inr = Number(params.value || 0);
+    return (
+      <div className="flex flex-col justify-center h-full leading-tight">
+        <span className="font-mono font-bold text-amber-400 text-xs tabular-nums">
+          ₹{inr.toLocaleString('en-IN')}
+        </span>
+        <span className="text-[9px] text-[var(--text-tertiary)] font-mono flex items-center gap-0.5">
+          <span>Indic Voice Base</span>
+        </span>
+      </div>
+    );
+  };
+
+  const SettledUsdCellRenderer = (params: ICellRendererParams<PayPalTransaction>) => {
+    if (params.node?.isRowPinned()) {
+      return (
+        <div className="flex flex-col justify-center h-full leading-tight">
+          <span className="font-mono font-extrabold text-emerald-300 text-xs tabular-nums">
+            ${Number(params.value || 0).toFixed(2)} USD
+          </span>
+          <span className="text-[9px] text-emerald-400 uppercase font-mono tracking-wider">
+            Total Settled
+          </span>
+        </div>
+      );
+    }
+    const usd = Number(params.value || 0);
+    return (
+      <div className="flex flex-col justify-center h-full leading-tight">
+        <span className="font-mono font-bold text-emerald-400 text-xs tabular-nums">
+          ${usd.toFixed(2)} USD
+        </span>
+        <span className="text-[9px] text-[var(--text-tertiary)] font-mono">
+          @ ₹84.00 locked
+        </span>
+      </div>
+    );
+  };
+
   const StatusCellRenderer = (params: ICellRendererParams<PayPalTransaction>) => {
+    if (params.node?.isRowPinned()) {
+      return (
+        <div className="flex items-center h-full">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+            <span>LEDGER BALANCED</span>
+          </span>
+        </div>
+      );
+    }
     const status = params.value;
     if (status === 'VERIFIED_PAID') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-          <span>VERIFIED PAID</span>
-        </span>
+        <div className="flex flex-col justify-center h-full leading-tight">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 w-fit">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            <span>VERIFIED PAID</span>
+          </span>
+          <span className="text-[9px] text-emerald-500/70 font-mono pl-1">
+            ✓ Captured in DB
+          </span>
+        </div>
       );
     }
     if (status === 'AWAITING_BUYER') {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30">
-          <Clock className="w-3.5 h-3.5 shrink-0" />
-          <span>AWAITING BUYER</span>
-        </span>
+        <div className="flex flex-col justify-center h-full leading-tight">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 w-fit">
+            <Clock className="w-3.5 h-3.5 shrink-0 text-amber-400 animate-pulse" />
+            <span>AWAITING BUYER</span>
+          </span>
+          <span className="text-[9px] text-amber-400/80 font-mono pl-1">
+            10m Window Active
+          </span>
+        </div>
+      );
+    }
+    if (status === 'CANCELLED') {
+      return (
+        <div className="flex items-center h-full">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30">
+            <span>CANCELLED</span>
+          </span>
+        </div>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-500/15 text-slate-300 border border-slate-500/30">
-        <span>{status || 'PENDING'}</span>
-      </span>
+      <div className="flex items-center h-full">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-slate-500/15 text-slate-300 border border-slate-500/30">
+          <span>{status || 'PENDING'}</span>
+        </span>
+      </div>
     );
   };
 
   const TrackingCellRenderer = (params: ICellRendererParams<PayPalTransaction>) => {
+    if (params.node?.isRowPinned()) {
+      return (
+        <div className="flex items-center h-full">
+          <span className="font-mono text-xs font-semibold text-blue-400 flex items-center gap-1">
+            <PackageCheck className="w-3.5 h-3.5" />
+            <span>{params.value}</span>
+          </span>
+        </div>
+      );
+    }
     const data = params.data;
     if (!data) return null;
 
@@ -156,6 +313,15 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
   };
 
   const ActionsCellRenderer = (params: ICellRendererParams<PayPalTransaction>) => {
+    if (params.node?.isRowPinned()) {
+      return (
+        <div className="flex items-center h-full">
+          <span className="text-[10px] text-slate-400 font-mono uppercase tracking-wider">
+            SUMMARY ROW
+          </span>
+        </div>
+      );
+    }
     const data = params.data;
     if (!data) return null;
 
@@ -182,65 +348,109 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
     );
   };
 
-  // AG Grid Column Definitions with Guaranteed MinWidths (Zero Header Truncations)
+  // Custom Empty State Overlay
+  const CustomNoRowsOverlay = () => (
+    <div className="flex flex-col items-center justify-center p-8 text-center">
+      <div className="w-12 h-12 rounded-2xl bg-slate-800/80 border border-slate-700/60 flex items-center justify-center mb-3 text-slate-400 shadow-inner">
+        <Filter className="w-6 h-6 text-amber-400/80" />
+      </div>
+      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
+        No Transactions Match Active Filter
+      </h3>
+      <p className="text-xs text-[var(--text-tertiary)] max-w-xs">
+        Speak a command in Telugu or Hindi, or tap a preset chip to stage a new cross-border order.
+      </p>
+    </div>
+  );
+
+  // Dynamic Pinned Bottom Summary Row
+  const pinnedBottomRowData = useMemo(() => {
+    const verified = transactions.filter(t => t.status === 'VERIFIED_PAID');
+    const totalInr = transactions.reduce((sum, t) => sum + (Number(t.spoken_amount_inr) || 0), 0);
+    const totalUsd = verified.reduce((sum, t) => sum + (Number(t.settlement_amount_usd) || 0), 0);
+    const shippedCount = transactions.filter(t => t.shipment_status === 'SHIPPED').length;
+
+    return [{
+      id: 'pinned_total',
+      paypal_invoice_id: `SUMMARY (${transactions.length} Total)`,
+      customer_name: 'All Global Corridors',
+      customer_country: 'Cross-Border',
+      item_name: `Verified: ${verified.length} Paid | Pending: ${transactions.length - verified.length}`,
+      spoken_amount_inr: totalInr,
+      settlement_amount_usd: totalUsd,
+      status: 'VERIFIED_PAID',
+      shipment_status: `${shippedCount} Dispatched`,
+    }];
+  }, [transactions]);
+
+  // AG Grid Column Definitions with Tooltips & Flash Animations
   const columnDefs = useMemo<ColDef<PayPalTransaction>[]>(() => [
     {
       headerName: 'PayPal Reference',
       field: 'paypal_invoice_id',
+      headerTooltip: 'PayPal Orders v2 / Invoicing v2 unique reference token.',
       valueGetter: (p) => p.data?.paypal_invoice_id || p.data?.paypal_order_id || p.data?.id,
-      minWidth: 150,
-      width: 170,
-      cellClass: 'font-mono text-xs font-semibold text-[var(--text-primary)]',
+      minWidth: 160,
+      width: 175,
+      cellClass: 'font-mono text-xs font-semibold text-[var(--text-primary)] flex items-center',
+      enableCellChangeFlash: true,
     },
     {
-      headerName: 'Buyer & Country',
+      headerName: 'Buyer & Corridor',
       field: 'customer_name',
-      valueGetter: (p) => `${p.data?.customer_name} (${p.data?.customer_country?.split('(')[1]?.replace(')', '') || 'US'})`,
-      minWidth: 150,
-      width: 170,
-      cellClass: 'font-medium text-[var(--text-primary)]',
+      headerTooltip: 'International buyer and destination export country.',
+      cellRenderer: CustomerCellRenderer,
+      minWidth: 170,
+      width: 185,
     },
     {
       headerName: 'Item Description',
       field: 'item_name',
-      minWidth: 240,
+      headerTooltip: 'Artisan craft or handloom product description.',
+      minWidth: 230,
       flex: 1,
-      cellClass: 'text-[var(--text-secondary)] text-xs truncate',
+      cellClass: 'text-[var(--text-secondary)] text-xs truncate flex items-center',
     },
     {
       headerName: 'Spoken INR',
       field: 'spoken_amount_inr',
+      headerTooltip: 'Spoken domestic price transcribed by Sarvam AI Saaras:v3.',
+      cellRenderer: SpokenInrCellRenderer,
       minWidth: 130,
       width: 140,
-      valueFormatter: (p: ValueFormatterParams) => `₹${Number(p.value).toLocaleString('en-IN')}`,
-      cellClass: 'font-mono font-bold text-amber-400 text-xs tabular-nums',
+      enableCellChangeFlash: true,
     },
     {
       headerName: 'Settled USD',
       field: 'settlement_amount_usd',
-      minWidth: 130,
-      width: 140,
-      valueFormatter: (p: ValueFormatterParams) => `$${Number(p.value).toFixed(2)} USD`,
-      cellClass: 'font-mono font-bold text-emerald-400 text-xs tabular-nums',
+      headerTooltip: 'Settlement amount in USD locked at reference FX quote (1 USD = ₹84.00 INR).',
+      cellRenderer: SettledUsdCellRenderer,
+      minWidth: 140,
+      width: 155,
+      enableCellChangeFlash: true,
     },
     {
       headerName: 'Payment Status',
       field: 'status',
-      minWidth: 155,
-      width: 165,
+      headerTooltip: 'Double-entry cryptographic payment status from PayPal capture.',
+      minWidth: 165,
+      width: 175,
       cellRenderer: StatusCellRenderer,
+      enableCellChangeFlash: true,
     },
     {
-      headerName: 'Shipment Tracking',
+      headerName: 'Seller Protection',
       field: 'shipment_status',
-      minWidth: 155,
+      headerTooltip: 'DHL/FedEx tracking required by PayPal Seller Protection to prevent 21-day fund holds.',
+      minWidth: 160,
       width: 180,
       cellRenderer: TrackingCellRenderer,
+      enableCellChangeFlash: true,
     },
     {
       headerName: 'Actions',
-      minWidth: 120,
-      width: 130,
+      minWidth: 110,
+      width: 120,
       cellRenderer: ActionsCellRenderer,
       sortable: false,
       filter: false,
@@ -251,6 +461,7 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
     sortable: true,
     filter: true,
     resizable: true,
+    enableCellChangeFlash: true,
   }), []);
 
   return (
@@ -260,12 +471,15 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-emerald)]" />
-            <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)]">
-              Enterprise PayPal Ledger (AG Grid Community v32)
+            <h1 className="text-lg font-bold tracking-tight text-[var(--text-primary)] flex items-center gap-2">
+              <span>Enterprise PayPal Ledger</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                AG Grid Community v32
+              </span>
             </h1>
           </div>
           <p className="text-xs text-[var(--text-secondary)]">
-            Live double-entry verified transactions, scannable QR generation, and Seller Protection tracking.
+            Live double-entry verified transactions, native pinned summary totals, scannable QR generation, and Seller Protection tracking.
           </p>
         </div>
 
@@ -291,7 +505,7 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
             onClick={() => handleQuickFilter('ALL')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeQuickFilter === 'ALL'
-                ? 'bg-[var(--accent-emerald)] text-slate-950'
+                ? 'bg-[var(--accent-emerald)] text-slate-950 font-bold'
                 : 'bg-[var(--bg-surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -301,7 +515,7 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
             onClick={() => handleQuickFilter('PAID')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeQuickFilter === 'PAID'
-                ? 'bg-emerald-500 text-slate-950'
+                ? 'bg-emerald-500 text-slate-950 font-bold'
                 : 'bg-[var(--bg-surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -311,7 +525,7 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
             onClick={() => handleQuickFilter('UNPAID')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeQuickFilter === 'UNPAID'
-                ? 'bg-amber-500 text-slate-950'
+                ? 'bg-amber-500 text-slate-950 font-bold'
                 : 'bg-[var(--bg-surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -321,7 +535,7 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
             onClick={() => handleQuickFilter('SHIPPED')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               activeQuickFilter === 'SHIPPED'
-                ? 'bg-blue-500 text-white'
+                ? 'bg-blue-500 text-white font-bold'
                 : 'bg-[var(--bg-surface-raised)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -342,19 +556,24 @@ export const AgGridCommandCenter: React.FC<AgGridCommandCenterProps> = ({
         </div>
       </div>
 
-      {/* The AG Grid Community Canvas */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden shadow-sm h-[600px] w-full ag-theme-quartz-dark">
+      {/* The AG Grid Community Canvas with Pinned Summary & Flash Support */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-surface)] overflow-hidden shadow-sm h-[620px] w-full ag-theme-quartz-dark">
         <AgGridReact<PayPalTransaction>
           rowData={transactions}
+          pinnedBottomRowData={pinnedBottomRowData}
           columnDefs={columnDefs}
           defaultColDef={defaultColDef}
           onGridReady={onGridReady}
+          onGridSizeChanged={onGridSizeChanged}
           pagination={true}
           paginationPageSize={10}
           paginationPageSizeSelector={[10, 25, 50]}
           animateRows={true}
+          enableCellChangeFlash={true}
           rowSelection="single"
+          rowHeight={54}
           domLayout="normal"
+          noRowsOverlayComponent={CustomNoRowsOverlay}
         />
       </div>
     </div>
