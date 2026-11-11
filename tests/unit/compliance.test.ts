@@ -40,7 +40,8 @@ describe('PayPal AI Hackathon 2026: Official Requirements Compliance Suite', () 
 
     // 3. Cryptographically Verified Payment Capture
     const turn3 = await orchestrator.processVerifiedPaymentCapture({
-      invoiceId: turn2.transaction!.paypal_invoice_id,
+      orderId: turn2.transaction!.paypal_order_id,
+      captureId: 'CAP_COMPLIANCE_TEST_01',
     });
 
     expect(turn3).not.toBeNull();

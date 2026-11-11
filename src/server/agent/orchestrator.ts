@@ -709,7 +709,7 @@ Rules:
     if (staged.tool_name === 'stage_invoice_with_qr') {
       const order = await paypalService.createOrder({
         customerName: staged.customer_name || 'Customer',
-        customerEmail: staged.customer_email || process.env.PAYPAL_SANDBOX_BUYER_EMAIL || 'sb-pj4347w53813178@personal.example.com',
+        customerEmail: staged.customer_email || process.env.PAYPAL_SANDBOX_BUYER_EMAIL || '',
         itemName: staged.item_name || 'Handcrafted Export Product',
         quantity: staged.payload?.quantity || 1,
         amountUsd: staged.settlement_amount_usd || 100,
@@ -799,28 +799,38 @@ Rules:
     };
   }
 
-  // --- Simulate or Process Verified Capture & Webhook (Gate 5) ---
+  // --- Process Verified Capture & Webhook (Gate 5) ---
   async processVerifiedPaymentCapture(params: {
     orderId?: string;
     invoiceId?: string;
     captureId?: string;
     webhookEventId?: string;
   }): Promise<PayPalTransaction | null> {
+    if (!params.orderId && !params.invoiceId && !params.captureId) {
+      return null;
+    }
+
     const txs = await db.listTransactions();
-    let target = txs.find(t => 
+    const target = txs.find(t => 
       (params.orderId && t.paypal_order_id === params.orderId) ||
       (params.invoiceId && t.paypal_invoice_id === params.invoiceId) ||
       (params.captureId && t.paypal_capture_id === params.captureId)
     );
 
-    if (!target && (!params.orderId && !params.invoiceId && !params.captureId)) {
-      // In explicit simulator testing without parameters, target latest AWAITING_BUYER
-      target = txs.find(t => t.status === 'AWAITING_BUYER');
-    }
-
+    // If order is not found in our ledger, ignore it completely (no write)
     if (!target) return null;
 
-    const captureId = params.captureId || `CAP_${target.paypal_order_id || target.id}_99`;
+    // Strict idempotency: if order is already VERIFIED_PAID, return existing row with zero writes
+    if (target.status === 'VERIFIED_PAID') {
+      return target;
+    }
+
+    // Capture ID must be a real capture ID; never invent fake IDs
+    const captureId = params.captureId;
+    if (!captureId) {
+      throw new Error(`[Capture Error] Missing real PayPal capture ID for Order ${target.paypal_order_id || target.id}`);
+    }
+
     target.status = 'VERIFIED_PAID';
     target.paypal_capture_id = captureId;
     target.updated_at = new Date().toISOString();

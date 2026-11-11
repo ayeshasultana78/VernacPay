@@ -102,8 +102,11 @@ export class PayPalService {
         expiresAt: Date.now() + (data.expires_in - 60) * 1000,
       };
       return data.access_token;
-    } catch (err) {
-      console.warn('[PayPal OAuth] Falling back to high-fidelity sandbox token simulator:', err);
+    } catch (err: any) {
+      if (!this.isMockCredentials() && process.env.DEMO_MODE !== 'true') {
+        throw new Error(`[PayPal OAuth Error] Unable to authenticate with PayPal: ${err.message}`);
+      }
+      console.warn('[PayPal OAuth] Falling back to sandbox token simulator in DEMO_MODE:', err.message);
       const mockToken = `simulated_sandbox_token_${Date.now()}`;
       this.cachedToken = { token: mockToken, expiresAt: Date.now() + 3600 * 1000 };
       return mockToken;
@@ -190,7 +193,10 @@ export class PayPalService {
         approval_url: approveLink || `https://www.sandbox.paypal.com/checkoutnow?token=${data.id}`,
       };
     } catch (err: any) {
-      console.warn('[PayPal createOrder] Simulated fallback:', err.message);
+      if (!this.isMockCredentials() && process.env.DEMO_MODE !== 'true') {
+        throw new Error(`[PayPal createOrder Error] Failed to create live order on PayPal Sandbox: ${err.message}`);
+      }
+      console.warn('[PayPal createOrder] Simulated fallback in DEMO_MODE:', err.message);
       const orderId = `8XY${Math.floor(10000000 + Math.random() * 90000000)}AB`;
       return {
         id: orderId,
@@ -713,11 +719,34 @@ export class PayPalService {
     const authAlgo = params.headers['paypal-auth-algo'] as string;
     const transmissionSig = params.headers['paypal-transmission-sig'] as string;
 
-    // In local sandbox or when testing simulated webhooks
-    if (this.isMockCredentials() || !transmissionSig) {
+    // Fail closed immediately if signature or required headers are missing
+    if (!transmissionId || !transmissionTime || !certUrl || !authAlgo || !transmissionSig) {
+      if (this.isMockCredentials() && process.env.DEMO_MODE === 'true') {
+        return {
+          verified: true,
+          message: 'DEMO_MODE: Mock signature accepted.',
+        };
+      }
+      return {
+        verified: false,
+        message: 'Missing required PayPal webhook cryptographic signature headers.',
+      };
+    }
+
+    if (this.isMockCredentials() && process.env.DEMO_MODE === 'true') {
       return {
         verified: true,
-        message: 'Sandbox / Simulated signature successfully validated.',
+        message: 'DEMO_MODE: Sandbox simulated signature successfully validated.',
+      };
+    }
+
+    if (!this.webhookId || this.webhookId.startsWith('mock-')) {
+      if (process.env.DEMO_MODE === 'true') {
+        return { verified: true, message: 'DEMO_MODE: Mock webhook ID validated.' };
+      }
+      return {
+        verified: false,
+        message: 'Refusing webhook verification: PAYPAL_WEBHOOK_ID is not configured with a live registered webhook ID.',
       };
     }
 
@@ -744,13 +773,13 @@ export class PayPalService {
       const isOk = data.verification_status === 'SUCCESS';
       return {
         verified: isOk,
-        message: isOk ? 'PayPal Webhook signature cryptographically verified.' : 'Signature verification failed.',
+        message: isOk ? 'PayPal Webhook signature cryptographically verified.' : `Signature verification failed (${data.verification_status || 'FAILURE'}).`,
       };
     } catch (err: any) {
-      console.warn('[PayPal Webhook] Signature verification fallback:', err.message);
+      console.error('[PayPal Webhook] Signature verification error:', err.message);
       return {
-        verified: true,
-        message: 'Validated via Sandbox fallback verification channel.',
+        verified: false,
+        message: `Signature verification exception: ${err.message}`,
       };
     }
   }
