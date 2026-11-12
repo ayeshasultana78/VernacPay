@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, MicOff, Volume2, ShieldAlert, CheckCircle, XCircle, Clock, Send, Sparkles } from 'lucide-react';
+import { Mic, MicOff, ShieldAlert, CheckCircle, XCircle, Sparkles } from 'lucide-react';
 import { LanguageCode, StagedConfirmation } from '../../types';
+import { BilingualSubtitleBanner } from './BilingualSubtitleBanner';
 
 interface VoiceAgentPaneProps {
   currentLanguage: LanguageCode;
@@ -119,41 +120,16 @@ export const VoiceAgentPane: React.FC<VoiceAgentPaneProps> = ({
         </p>
       </div>
 
-      {/* Bilingual Subtitle Strip */}
-      <div className="bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 space-y-2.5">
-        <div className="flex items-center justify-between text-[11px] text-slate-400 font-semibold uppercase tracking-wider">
-          <span>Bilingual Subtitle & Translation Strip</span>
-          {transcriptNative && (
-            <button
-              onClick={() => playAudio(ttsAudioBase64 || '')}
-              className="text-paypal-lightBlue hover:text-white flex items-center gap-1 normal-case font-normal text-xs transition-colors"
-            >
-              <Volume2 className={`w-3.5 h-3.5 ${isPlayingAudio ? 'animate-bounce text-emerald-400' : ''}`} />
-              <span>{isPlayingAudio ? 'Speaking...' : 'Play Audio'}</span>
-            </button>
-          )}
-        </div>
-
-        {/* Native Language Script Subtitle */}
-        <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-          <div className="text-[10px] text-amber-400/90 font-medium mb-1">
-            Native Indic Transcript ({currentLanguage}):
-          </div>
-          <div className="text-sm font-medium text-slate-100 min-h-[22px]">
-            {transcriptNative || <span className="text-slate-500 italic">"సారా కి 12,000 రూపాయల ఇన్వాయిస్ పంపండి..."</span>}
-          </div>
-        </div>
-
-        {/* English Translation Subtitle */}
-        <div className="p-2.5 rounded-lg bg-slate-900 border border-slate-800">
-          <div className="text-[10px] text-paypal-lightBlue font-medium mb-1">
-            English Translation (For International PayPal Judges):
-          </div>
-          <div className="text-xs font-normal text-slate-300 min-h-[20px]">
-            {transcriptEnglish || <span className="text-slate-500 italic">"Send a PayPal invoice to Sarah for ₹12,000..."</span>}
-          </div>
-        </div>
-      </div>
+      <BilingualSubtitleBanner
+        currentLanguage={currentLanguage}
+        transcriptNative={transcriptNative}
+        transcriptEnglish={transcriptEnglish}
+        isLoading={isLoading}
+        isPlayingAudio={isPlayingAudio}
+        showPlayControl={Boolean(transcriptNative.trim())}
+        onPlayAudio={() => playAudio(ttsAudioBase64 || '')}
+        playLabel="Play Audio"
+      />
 
       {/* Dual-Mode Staged Confirmation Card (Gate 3) */}
       {stagedConfirmation && stagedConfirmation.status === 'PENDING_APPROVAL' && (

@@ -5,3 +5,6 @@ dist-client/
 *.log
 .DS_Store
 coverage/
+demo-recordings/
+scripts/record_hackathon_demo.ts
+scripts/add_voiceover.ts

@@ -335,27 +335,6 @@ export const AppContent: React.FC = () => {
     }
   };
 
-  // 7. Simulate Buyer Sandbox Payment Capture (Gate 5)
-  const handleSimulateCapture = async (tx: PayPalTransaction) => {
-    try {
-      const res = await fetch('/api/sandbox/simulate-capture', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          orderId: tx.paypal_order_id,
-          invoiceId: tx.paypal_invoice_id,
-        }),
-      });
-      const data = await res.json();
-      if (data.transaction) {
-        setSelectedQrTx(data.transaction);
-      }
-      toast.success(`Payment verified and ledger locked for ${tx.customer_name}!`);
-    } catch (err: any) {
-      toast.error(`Capture simulation error: ${err.message}`);
-    }
-  };
-
   const handleSendReminderFromGrid = async (tx: PayPalTransaction) => {
     setIsLoading(true);
     resetStages();
@@ -495,7 +474,6 @@ export const AppContent: React.FC = () => {
         transaction={selectedQrTx}
         isOpen={!!selectedQrTx}
         onClose={() => setSelectedQrTx(null)}
-        onSimulateCapture={handleSimulateCapture}
       />
 
       <ComplianceModal

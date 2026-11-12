@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Mic, 
   MicOff, 
-  Volume2, 
   CheckCircle, 
   XCircle, 
   Clock, 
@@ -15,6 +14,7 @@ import {
 } from 'lucide-react';
 import { LanguageCode, StagedConfirmation } from '../../../types';
 import { useAppStore } from '../../store/useAppStore';
+import { BilingualSubtitleBanner } from '../BilingualSubtitleBanner';
 
 interface VoiceStudioViewProps {
   currentLanguage: LanguageCode;
@@ -210,57 +210,16 @@ export const VoiceStudioView: React.FC<VoiceStudioViewProps> = ({
         </div>
       </div>
 
-      {/* Bilingual Subtitle & Translation Strip */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Native Indic Transcript Card */}
-        <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-              <span>Native Indic Transcript ({language})</span>
-            </span>
-            {ttsAudioBase64 && (
-              <button
-                onClick={() => playAudio(ttsAudioBase64)}
-                className="flex items-center gap-1 text-[11px] font-semibold text-emerald-400 hover:text-emerald-300"
-              >
-                <Volume2 className="w-3.5 h-3.5" />
-                <span>Play TTS</span>
-              </button>
-            )}
-          </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-surface-sunken)] border border-[var(--border-subtle)] min-h-[80px]">
-            {transcriptNative ? (
-              <p className="text-sm md:text-base font-telugu font-medium text-[var(--text-primary)] leading-relaxed">
-                "{transcriptNative}"
-              </p>
-            ) : (
-              <p className="text-xs text-[var(--text-tertiary)] italic">
-                Awaiting voice input in Telugu, Hindi, Urdu, or English...
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* English Translation Card */}
-        <div className="p-5 rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-subtle)]">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">
-              English Translation (PayPal LLM Tool Ingestion)
-            </span>
-          </div>
-          <div className="p-4 rounded-xl bg-[var(--bg-surface-sunken)] border border-[var(--border-subtle)] min-h-[80px]">
-            {transcriptEnglish ? (
-              <p className="text-sm font-medium text-[var(--text-primary)] leading-relaxed">
-                "{transcriptEnglish}"
-              </p>
-            ) : (
-              <p className="text-xs text-[var(--text-tertiary)] italic">
-                Speech will be translated in real time for Claude 3.7 Sonnet tool dispatch...
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
+      <BilingualSubtitleBanner
+        currentLanguage={language}
+        transcriptNative={transcriptNative}
+        transcriptEnglish={transcriptEnglish}
+        isLoading={isLoading}
+        isPlayingAudio={isPlayingAudio}
+        showPlayControl={Boolean(ttsAudioBase64)}
+        onPlayAudio={() => playAudio(ttsAudioBase64 || '')}
+        playLabel="Play TTS"
+      />
 
       {/* Staged Confirmation Card (Human-in-the-Loop Approval Required) */}
       {stagedConfirmation && (
